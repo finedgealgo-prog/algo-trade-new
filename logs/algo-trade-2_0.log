@@ -1,0 +1,349 @@
+2026-09-04T10:59:27+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=strat1 leg=leg1 ltp=130.0
+2026-09-04T10:59:27+0530 INFO token_router [TokenRouter] trigger OVERALL_SL_HIT strategy=strat1 leg= ltp=102.0
+2026-09-04T11:06:28+0530 INFO token_router [TokenRouter] trigger LAZY_TRIGGERED strategy=s1 leg=leg1 ltp=110.0
+2026-09-04T11:06:28+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=strat1 leg=leg1 ltp=130.0
+2026-09-04T11:06:28+0530 INFO token_router [TokenRouter] trigger OVERALL_SL_HIT strategy=strat1 leg= ltp=102.0
+2026-09-04T11:10:53+0530 INFO token_router [TokenRouter] trigger LAZY_TRIGGERED strategy=s1 leg=leg1 ltp=110.0
+2026-09-04T11:10:53+0530 INFO token_router [TokenRouter] trigger RECOST_TRIGGERED strategy=s1 leg=leg1 ltp=99.8
+2026-09-04T11:10:53+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=strat1 leg=leg1 ltp=130.0
+2026-09-04T11:10:53+0530 INFO token_router [TokenRouter] trigger OVERALL_SL_HIT strategy=strat1 leg= ltp=102.0
+2026-09-04T14:06:03+0530 INFO token_router [TokenRouter] trigger LAZY_TRIGGERED strategy=s1 leg=leg1 ltp=110.0 reason=LAZY:lazy1
+2026-09-04T14:06:03+0530 INFO token_router [TokenRouter] trigger RECOST_TRIGGERED strategy=s1 leg=leg1 ltp=99.8 reason=RECOST:rc1
+2026-09-04T14:06:03+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=strat1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:06:03+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=strat1 leg= ltp=-150.0 reason=strat1
+2026-09-04T14:06:34+0530 INFO token_router [TokenRouter] trigger LAZY_TRIGGERED strategy=s1 leg=leg1 ltp=110.0 reason=LAZY:lazy1
+2026-09-04T14:06:34+0530 INFO token_router [TokenRouter] trigger RECOST_TRIGGERED strategy=s1 leg=leg1 ltp=99.8 reason=RECOST:rc1
+2026-09-04T14:06:34+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=strat1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:06:34+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=strat1 leg= ltp=-150.0 reason=strat1
+2026-09-04T14:07:14+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:07:14+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:07:14+0530 INFO token_router [TokenRouter] trigger STRATEGY_LOCK_HIT strategy=s1 leg= ltp=150.0 reason=s1
+2026-09-04T14:07:46+0530 INFO token_router [TokenRouter] trigger LAZY_TRIGGERED strategy=s1 leg=leg1 ltp=110.0 reason=LAZY:lazy1
+2026-09-04T14:07:46+0530 INFO token_router [TokenRouter] trigger RECOST_TRIGGERED strategy=s1 leg=leg1 ltp=99.8 reason=RECOST:rc1
+2026-09-04T14:07:46+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=strat1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:07:46+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=strat1 leg= ltp=-150.0 reason=strat1
+2026-09-04T14:07:46+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:07:46+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:07:46+0530 INFO token_router [TokenRouter] trigger STRATEGY_LOCK_HIT strategy=s1 leg= ltp=150.0 reason=s1
+2026-09-04T14:20:01+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:20:01+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=130.0 order_id=VIRT-0bdf136ac0e2
+2026-09-04T14:20:01+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=70.0 reason=SL
+2026-09-04T14:20:01+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=70.0 order_id=VIRT-82aae61fe80e
+2026-09-04T14:20:01+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=0.0 order_id=VIRT-791373fe7515
+2026-09-04T14:20:01+0530 WARNING orders.order_engine [OrderEngine] duplicate exit suppressed leg=leg1 reason=SL_HIT
+2026-09-04T14:20:01+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=s1 leg= ltp=-150.0 reason=s1
+2026-09-04T14:20:01+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=STRATEGY_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-b5074920c614
+2026-09-04T14:20:01+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg2 reason=STRATEGY_STOP_LOSS_HIT fill_price=0.0 order_id=VIRT-c46bcb35de17
+2026-09-04T14:20:01+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:20:01+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=BROKER_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-86cd46a2d60e
+2026-09-04T14:20:08+0530 INFO token_router [TokenRouter] trigger LAZY_TRIGGERED strategy=s1 leg=leg1 ltp=110.0 reason=LAZY:lazy1
+2026-09-04T14:20:08+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:20:08+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=130.0 order_id=VIRT-8b2ceef46686
+2026-09-04T14:20:08+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=70.0 reason=SL
+2026-09-04T14:20:08+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=70.0 order_id=VIRT-e0b28be70710
+2026-09-04T14:20:08+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=0.0 order_id=VIRT-5c8cdda3c99b
+2026-09-04T14:20:08+0530 WARNING orders.order_engine [OrderEngine] duplicate exit suppressed leg=leg1 reason=SL_HIT
+2026-09-04T14:20:08+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=s1 leg= ltp=-150.0 reason=s1
+2026-09-04T14:20:08+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg2 reason=STRATEGY_STOP_LOSS_HIT fill_price=0.0 order_id=VIRT-9f59c6c96891
+2026-09-04T14:20:08+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=STRATEGY_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-1b891b9e72f0
+2026-09-04T14:20:08+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:20:08+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=BROKER_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-83d9b1d1a41f
+2026-09-04T14:20:08+0530 INFO token_router [TokenRouter] trigger RECOST_TRIGGERED strategy=s1 leg=leg1 ltp=99.8 reason=RECOST:rc1
+2026-09-04T14:20:08+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=strat1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:20:08+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=strat1 leg= ltp=-150.0 reason=strat1
+2026-09-04T14:20:08+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:20:08+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:20:08+0530 INFO token_router [TokenRouter] trigger STRATEGY_LOCK_HIT strategy=s1 leg= ltp=150.0 reason=s1
+2026-09-04T14:29:44+0530 INFO token_router [TokenRouter] trigger LAZY_TRIGGERED strategy=s1 leg=leg1 ltp=110.0 reason=LAZY:lazy1
+2026-09-04T14:29:44+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:29:44+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=130.0 order_id=VIRT-adc14ccfed48
+2026-09-04T14:29:44+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=70.0 reason=SL
+2026-09-04T14:29:44+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=70.0 order_id=VIRT-618fa3aa3ae1
+2026-09-04T14:29:44+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=0.0 order_id=VIRT-1c765bd4f116
+2026-09-04T14:29:44+0530 WARNING orders.order_engine [OrderEngine] duplicate exit suppressed leg=leg1 reason=SL_HIT
+2026-09-04T14:29:44+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=s1 leg= ltp=-150.0 reason=s1
+2026-09-04T14:29:44+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg2 reason=STRATEGY_STOP_LOSS_HIT fill_price=0.0 order_id=VIRT-d87d5ba51f4a
+2026-09-04T14:29:44+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=STRATEGY_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-02114ded8a95
+2026-09-04T14:29:44+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:29:44+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=BROKER_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-683ec7956c45
+2026-09-04T14:29:44+0530 INFO token_router [TokenRouter] trigger RECOST_TRIGGERED strategy=s1 leg=leg1 ltp=99.8 reason=RECOST:rc1
+2026-09-04T14:29:44+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=strat1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:29:44+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=strat1 leg= ltp=-150.0 reason=strat1
+2026-09-04T14:29:44+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:29:44+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:29:44+0530 INFO token_router [TokenRouter] trigger STRATEGY_LOCK_HIT strategy=s1 leg= ltp=150.0 reason=s1
+2026-09-04T14:31:21+0530 INFO token_router [TokenRouter] trigger LAZY_TRIGGERED strategy=s1 leg=leg1 ltp=110.0 reason=LAZY:lazy1
+2026-09-04T14:31:21+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:31:21+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=130.0 order_id=VIRT-2c04201f29f3
+2026-09-04T14:31:21+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=70.0 reason=SL
+2026-09-04T14:31:21+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=70.0 order_id=VIRT-c4f64fa9b03e
+2026-09-04T14:31:21+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=0.0 order_id=VIRT-b6f8bea964bb
+2026-09-04T14:31:21+0530 WARNING orders.order_engine [OrderEngine] duplicate exit suppressed leg=leg1 reason=SL_HIT
+2026-09-04T14:31:21+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=s1 leg= ltp=-150.0 reason=s1
+2026-09-04T14:31:21+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=STRATEGY_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-96f995d23bef
+2026-09-04T14:31:21+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg2 reason=STRATEGY_STOP_LOSS_HIT fill_price=0.0 order_id=VIRT-b9e581e353c4
+2026-09-04T14:31:21+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:31:21+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=BROKER_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-607933c7022e
+2026-09-04T14:31:21+0530 INFO token_router [TokenRouter] trigger RECOST_TRIGGERED strategy=s1 leg=leg1 ltp=99.8 reason=RECOST:rc1
+2026-09-04T14:31:21+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=strat1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:31:21+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=strat1 leg= ltp=-150.0 reason=strat1
+2026-09-04T14:31:21+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:31:21+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:31:21+0530 INFO token_router [TokenRouter] trigger STRATEGY_LOCK_HIT strategy=s1 leg= ltp=150.0 reason=s1
+2026-09-04T14:39:49+0530 INFO token_router [TokenRouter] trigger LAZY_TRIGGERED strategy=s1 leg=leg1 ltp=110.0 reason=LAZY:lazy1
+2026-09-04T14:39:49+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:39:49+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=130.0 order_id=VIRT-ef147b43b15a
+2026-09-04T14:39:49+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=70.0 reason=SL
+2026-09-04T14:39:49+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=70.0 order_id=VIRT-5f049f8eaef6
+2026-09-04T14:39:49+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=0.0 order_id=VIRT-940153b0d52f
+2026-09-04T14:39:49+0530 WARNING orders.order_engine [OrderEngine] duplicate exit suppressed leg=leg1 reason=SL_HIT
+2026-09-04T14:39:49+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=s1 leg= ltp=-150.0 reason=s1
+2026-09-04T14:39:49+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=STRATEGY_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-9ae2a02275a0
+2026-09-04T14:39:49+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg2 reason=STRATEGY_STOP_LOSS_HIT fill_price=0.0 order_id=VIRT-f9b4691a91a1
+2026-09-04T14:39:49+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:39:49+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=BROKER_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-c1e548204f42
+2026-09-04T14:39:49+0530 INFO token_router [TokenRouter] trigger RECOST_TRIGGERED strategy=s1 leg=leg1 ltp=99.8 reason=RECOST:rc1
+2026-09-04T14:39:49+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=strat1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:39:49+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=strat1 leg= ltp=-150.0 reason=strat1
+2026-09-04T14:39:49+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:39:49+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:39:49+0530 INFO token_router [TokenRouter] trigger STRATEGY_LOCK_HIT strategy=s1 leg= ltp=150.0 reason=s1
+2026-09-04T14:40:31+0530 WARNING services.leg_followup [Followup] NextLeg ref=lazy1 strike not resolved
+2026-09-04T14:40:31+0530 WARNING services.leg_followup [Followup] NextLeg ref=does_not_exist not found in IdleLegConfigs for strategy=s1
+2026-09-04T14:40:31+0530 INFO services.leg_followup [Followup] recost watcher armed leg=leg1 token=T2 reference_price=100.0
+2026-09-04T14:40:31+0530 INFO services.leg_followup [Followup] leg=leg1 re-cost budget exhausted or no entry price, not armed
+2026-09-04T14:40:31+0530 INFO services.leg_followup [Followup] fresh entry leg=leg1_re1 token=T2 price=100.0 order_id=VIRT-dae1527be314
+2026-09-04T14:40:31+0530 INFO services.leg_followup [Followup] leg=leg1 skipped — strategy/broker not ACTIVE
+2026-09-04T14:40:31+0530 INFO services.leg_followup [Followup] leg=leg1 skipped — strategy/broker not ACTIVE
+2026-09-04T14:40:55+0530 INFO token_router [TokenRouter] trigger LAZY_TRIGGERED strategy=s1 leg=leg1 ltp=110.0 reason=LAZY:lazy1
+2026-09-04T14:40:55+0530 INFO services.leg_followup [Followup] lazy watcher armed ref=lazy1 token=T2P reference_ltp=45.0
+2026-09-04T14:40:55+0530 WARNING services.leg_followup [Followup] NextLeg ref=does_not_exist not found in IdleLegConfigs for strategy=s1
+2026-09-04T14:40:55+0530 INFO services.leg_followup [Followup] recost watcher armed leg=leg1 token=T2 reference_price=100.0
+2026-09-04T14:40:55+0530 INFO services.leg_followup [Followup] leg=leg1 re-cost budget exhausted or no entry price, not armed
+2026-09-04T14:40:55+0530 INFO services.leg_followup [Followup] fresh entry leg=leg1_re1 token=T2 price=100.0 order_id=VIRT-152d94b44a90
+2026-09-04T14:40:55+0530 INFO services.leg_followup [Followup] leg=leg1 skipped — strategy/broker not ACTIVE
+2026-09-04T14:40:55+0530 INFO services.leg_followup [Followup] leg=leg1 skipped — strategy/broker not ACTIVE
+2026-09-04T14:40:55+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:40:55+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=130.0 order_id=VIRT-babcdbd5c153
+2026-09-04T14:40:55+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=70.0 reason=SL
+2026-09-04T14:40:55+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=70.0 order_id=VIRT-0678932f1ae7
+2026-09-04T14:40:55+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=0.0 order_id=VIRT-b04850145418
+2026-09-04T14:40:55+0530 WARNING orders.order_engine [OrderEngine] duplicate exit suppressed leg=leg1 reason=SL_HIT
+2026-09-04T14:40:55+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=s1 leg= ltp=-150.0 reason=s1
+2026-09-04T14:40:55+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg2 reason=STRATEGY_STOP_LOSS_HIT fill_price=0.0 order_id=VIRT-9cdf50543ed9
+2026-09-04T14:40:55+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=STRATEGY_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-0b81a991029d
+2026-09-04T14:40:55+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:40:55+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=BROKER_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-5ec2fe881671
+2026-09-04T14:40:55+0530 INFO token_router [TokenRouter] trigger RECOST_TRIGGERED strategy=s1 leg=leg1 ltp=99.8 reason=RECOST:rc1
+2026-09-04T14:40:55+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=strat1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:40:55+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=strat1 leg= ltp=-150.0 reason=strat1
+2026-09-04T14:40:55+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:40:55+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:40:55+0530 INFO token_router [TokenRouter] trigger STRATEGY_LOCK_HIT strategy=s1 leg= ltp=150.0 reason=s1
+2026-09-04T14:43:36+0530 INFO token_router [TokenRouter] trigger LAZY_TRIGGERED strategy=s1 leg=leg1 ltp=110.0 reason=LAZY:lazy1
+2026-09-04T14:43:36+0530 INFO services.leg_followup [Followup] lazy watcher armed ref=lazy1 token=T2P reference_ltp=45.0
+2026-09-04T14:43:36+0530 WARNING services.leg_followup [Followup] NextLeg ref=does_not_exist not found in IdleLegConfigs for strategy=s1
+2026-09-04T14:43:36+0530 INFO services.leg_followup [Followup] recost watcher armed leg=leg1 token=T2 reference_price=100.0
+2026-09-04T14:43:36+0530 INFO services.leg_followup [Followup] leg=leg1 re-cost budget exhausted or no entry price, not armed
+2026-09-04T14:43:36+0530 INFO services.leg_followup [Followup] fresh entry leg=leg1_re1 token=T2 price=100.0 order_id=VIRT-efd119557098
+2026-09-04T14:43:36+0530 INFO services.leg_followup [Followup] leg=leg1 skipped — strategy/broker not ACTIVE
+2026-09-04T14:43:36+0530 INFO services.leg_followup [Followup] leg=leg1 skipped — strategy/broker not ACTIVE
+2026-09-04T14:43:36+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:43:36+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=130.0 order_id=VIRT-a2425a441874
+2026-09-04T14:43:36+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=70.0 reason=SL
+2026-09-04T14:43:36+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=70.0 order_id=VIRT-8db27dba0547
+2026-09-04T14:43:36+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=0.0 order_id=VIRT-bc19bae4412b
+2026-09-04T14:43:36+0530 WARNING orders.order_engine [OrderEngine] duplicate exit suppressed leg=leg1 reason=SL_HIT
+2026-09-04T14:43:36+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=s1 leg= ltp=-150.0 reason=s1
+2026-09-04T14:43:36+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=STRATEGY_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-0014e33fba8c
+2026-09-04T14:43:36+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg2 reason=STRATEGY_STOP_LOSS_HIT fill_price=0.0 order_id=VIRT-2cd417233f63
+2026-09-04T14:43:36+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:43:36+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=BROKER_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-0745fb4fafb0
+2026-09-04T14:43:36+0530 INFO token_router [TokenRouter] trigger RECOST_TRIGGERED strategy=s1 leg=leg1 ltp=99.8 reason=RECOST:rc1
+2026-09-04T14:43:36+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=strat1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:43:36+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=strat1 leg= ltp=-150.0 reason=strat1
+2026-09-04T14:43:36+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:43:36+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:43:36+0530 INFO token_router [TokenRouter] trigger STRATEGY_LOCK_HIT strategy=s1 leg= ltp=150.0 reason=s1
+2026-09-04T14:43:57+0530 INFO token_router [TokenRouter] trigger SCHEDULED_ENTRY_READY strategy=s1 leg= ltp=0.0 reason=pend1
+2026-09-04T14:44:03+0530 INFO token_router [TokenRouter] trigger LAZY_TRIGGERED strategy=s1 leg=leg1 ltp=110.0 reason=LAZY:lazy1
+2026-09-04T14:44:03+0530 INFO services.leg_followup [Followup] lazy watcher armed ref=lazy1 token=T2P reference_ltp=45.0
+2026-09-04T14:44:03+0530 WARNING services.leg_followup [Followup] NextLeg ref=does_not_exist not found in IdleLegConfigs for strategy=s1
+2026-09-04T14:44:03+0530 INFO services.leg_followup [Followup] recost watcher armed leg=leg1 token=T2 reference_price=100.0
+2026-09-04T14:44:03+0530 INFO services.leg_followup [Followup] leg=leg1 re-cost budget exhausted or no entry price, not armed
+2026-09-04T14:44:03+0530 INFO services.leg_followup [Followup] fresh entry leg=leg1_re1 token=T2 price=100.0 order_id=VIRT-a1dd23650b8b
+2026-09-04T14:44:03+0530 INFO services.leg_followup [Followup] leg=leg1 skipped — strategy/broker not ACTIVE
+2026-09-04T14:44:03+0530 INFO services.leg_followup [Followup] leg=leg1 skipped — strategy/broker not ACTIVE
+2026-09-04T14:44:03+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:44:03+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=130.0 order_id=VIRT-dbdbb3c88650
+2026-09-04T14:44:03+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=70.0 reason=SL
+2026-09-04T14:44:03+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=70.0 order_id=VIRT-c3b1611b8a6e
+2026-09-04T14:44:03+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=0.0 order_id=VIRT-5828913447cd
+2026-09-04T14:44:03+0530 WARNING orders.order_engine [OrderEngine] duplicate exit suppressed leg=leg1 reason=SL_HIT
+2026-09-04T14:44:03+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=s1 leg= ltp=-150.0 reason=s1
+2026-09-04T14:44:03+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=STRATEGY_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-6703ca824255
+2026-09-04T14:44:03+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg2 reason=STRATEGY_STOP_LOSS_HIT fill_price=0.0 order_id=VIRT-7fde89816311
+2026-09-04T14:44:03+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:44:03+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=BROKER_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-79eeda1378e0
+2026-09-04T14:44:03+0530 INFO token_router [TokenRouter] trigger RECOST_TRIGGERED strategy=s1 leg=leg1 ltp=99.8 reason=RECOST:rc1
+2026-09-04T14:44:03+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=strat1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:44:03+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=strat1 leg= ltp=-150.0 reason=strat1
+2026-09-04T14:44:03+0530 INFO token_router [TokenRouter] trigger SCHEDULED_ENTRY_READY strategy=s1 leg= ltp=0.0 reason=pend1
+2026-09-04T14:44:03+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:44:03+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:44:03+0530 INFO token_router [TokenRouter] trigger STRATEGY_LOCK_HIT strategy=s1 leg= ltp=150.0 reason=s1
+2026-09-04T14:44:46+0530 INFO token_router [TokenRouter] trigger LAZY_TRIGGERED strategy=s1 leg=leg1 ltp=110.0 reason=LAZY:lazy1
+2026-09-04T14:44:46+0530 INFO services.leg_followup [Followup] lazy watcher armed ref=lazy1 token=T2P reference_ltp=45.0
+2026-09-04T14:44:46+0530 WARNING services.leg_followup [Followup] NextLeg ref=does_not_exist not found in IdleLegConfigs for strategy=s1
+2026-09-04T14:44:46+0530 INFO services.leg_followup [Followup] recost watcher armed leg=leg1 token=T2 reference_price=100.0
+2026-09-04T14:44:46+0530 INFO services.leg_followup [Followup] leg=leg1 re-cost budget exhausted or no entry price, not armed
+2026-09-04T14:44:46+0530 INFO services.leg_followup [Followup] fresh entry leg=leg1_re1 token=T2 price=100.0 order_id=VIRT-8270f01ba550
+2026-09-04T14:44:46+0530 INFO services.leg_followup [Followup] leg=leg1 skipped — strategy/broker not ACTIVE
+2026-09-04T14:44:46+0530 INFO services.leg_followup [Followup] leg=leg1 skipped — strategy/broker not ACTIVE
+2026-09-04T14:44:46+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:44:46+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=130.0 order_id=VIRT-5c4d579073e4
+2026-09-04T14:44:46+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=70.0 reason=SL
+2026-09-04T14:44:46+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=70.0 order_id=VIRT-67cbd83b8a48
+2026-09-04T14:44:46+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=0.0 order_id=VIRT-ac8c6da0ccd9
+2026-09-04T14:44:46+0530 WARNING orders.order_engine [OrderEngine] duplicate exit suppressed leg=leg1 reason=SL_HIT
+2026-09-04T14:44:46+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=s1 leg= ltp=-150.0 reason=s1
+2026-09-04T14:44:46+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=STRATEGY_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-fad59701ffac
+2026-09-04T14:44:46+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg2 reason=STRATEGY_STOP_LOSS_HIT fill_price=0.0 order_id=VIRT-dff37c2d5928
+2026-09-04T14:44:46+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:44:46+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=BROKER_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-d31095417e61
+2026-09-04T14:44:46+0530 INFO token_router [TokenRouter] trigger RECOST_TRIGGERED strategy=s1 leg=leg1 ltp=99.8 reason=RECOST:rc1
+2026-09-04T14:44:46+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=strat1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:44:46+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=strat1 leg= ltp=-150.0 reason=strat1
+2026-09-04T14:44:46+0530 INFO token_router [TokenRouter] trigger SCHEDULED_ENTRY_READY strategy=s1 leg= ltp=0.0 reason=pend1
+2026-09-04T14:44:46+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:44:46+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:44:46+0530 INFO token_router [TokenRouter] trigger STRATEGY_LOCK_HIT strategy=s1 leg= ltp=150.0 reason=s1
+2026-09-04T14:50:55+0530 INFO token_router [TokenRouter] trigger LAZY_TRIGGERED strategy=s1 leg=leg1 ltp=110.0 reason=LAZY:lazy1
+2026-09-04T14:50:55+0530 INFO services.leg_followup [Followup] lazy watcher armed ref=lazy1 token=T2P reference_ltp=45.0
+2026-09-04T14:50:55+0530 WARNING services.leg_followup [Followup] NextLeg ref=does_not_exist not found in IdleLegConfigs for strategy=s1
+2026-09-04T14:50:55+0530 INFO services.leg_followup [Followup] recost watcher armed leg=leg1 token=T2 reference_price=100.0
+2026-09-04T14:50:55+0530 INFO services.leg_followup [Followup] leg=leg1 re-cost budget exhausted or no entry price, not armed
+2026-09-04T14:50:55+0530 INFO services.leg_followup [Followup] fresh entry leg=leg1_re1 token=T2 price=100.0 order_id=VIRT-a672f1b14b7e
+2026-09-04T14:50:55+0530 INFO services.leg_followup [Followup] leg=leg1 skipped — strategy/broker not ACTIVE
+2026-09-04T14:50:55+0530 INFO services.leg_followup [Followup] leg=leg1 skipped — strategy/broker not ACTIVE
+2026-09-04T14:50:55+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:50:55+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=130.0 order_id=VIRT-1994827acfa5
+2026-09-04T14:50:55+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=70.0 reason=SL
+2026-09-04T14:50:55+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=70.0 order_id=VIRT-8d3225da93a5
+2026-09-04T14:50:55+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=0.0 order_id=VIRT-94ff2097eb5d
+2026-09-04T14:50:55+0530 WARNING orders.order_engine [OrderEngine] duplicate exit suppressed leg=leg1 reason=SL_HIT
+2026-09-04T14:50:55+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=s1 leg= ltp=-150.0 reason=s1
+2026-09-04T14:50:55+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=STRATEGY_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-10ca78604ac9
+2026-09-04T14:50:55+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg2 reason=STRATEGY_STOP_LOSS_HIT fill_price=0.0 order_id=VIRT-189936808075
+2026-09-04T14:50:55+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:50:55+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=BROKER_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-7727e70e09ad
+2026-09-04T14:50:55+0530 INFO token_router [TokenRouter] trigger RECOST_TRIGGERED strategy=s1 leg=leg1 ltp=99.8 reason=RECOST:rc1
+2026-09-04T14:50:55+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=strat1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:50:55+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=strat1 leg= ltp=-150.0 reason=strat1
+2026-09-04T14:50:55+0530 INFO token_router [TokenRouter] trigger SCHEDULED_ENTRY_READY strategy=s1 leg= ltp=0.0 reason=pend1
+2026-09-04T14:50:56+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:50:56+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:50:56+0530 INFO token_router [TokenRouter] trigger STRATEGY_LOCK_HIT strategy=s1 leg= ltp=150.0 reason=s1
+2026-09-04T14:52:22+0530 INFO token_router [TokenRouter] trigger LAZY_TRIGGERED strategy=s1 leg=leg1 ltp=110.0 reason=LAZY:lazy1
+2026-09-04T14:52:22+0530 INFO services.leg_followup [Followup] lazy watcher armed ref=lazy1 token=T2P reference_ltp=45.0
+2026-09-04T14:52:22+0530 WARNING services.leg_followup [Followup] NextLeg ref=does_not_exist not found in IdleLegConfigs for strategy=s1
+2026-09-04T14:52:22+0530 INFO services.leg_followup [Followup] recost watcher armed leg=leg1 token=T2 reference_price=100.0
+2026-09-04T14:52:22+0530 INFO services.leg_followup [Followup] leg=leg1 re-cost budget exhausted or no entry price, not armed
+2026-09-04T14:52:22+0530 INFO services.leg_followup [Followup] fresh entry leg=leg1_re1 token=T2 price=100.0 order_id=VIRT-4d0f2f9a083c
+2026-09-04T14:52:22+0530 INFO services.leg_followup [Followup] leg=leg1 skipped — strategy/broker not ACTIVE
+2026-09-04T14:52:22+0530 INFO services.leg_followup [Followup] leg=leg1 skipped — strategy/broker not ACTIVE
+2026-09-04T14:52:22+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:52:22+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=130.0 order_id=VIRT-daffe6cec771
+2026-09-04T14:52:22+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=70.0 reason=SL
+2026-09-04T14:52:22+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=70.0 order_id=VIRT-fd5128442bb5
+2026-09-04T14:52:22+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=0.0 order_id=VIRT-f2984b0a98b4
+2026-09-04T14:52:22+0530 WARNING orders.order_engine [OrderEngine] duplicate exit suppressed leg=leg1 reason=SL_HIT
+2026-09-04T14:52:22+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=s1 leg= ltp=-150.0 reason=s1
+2026-09-04T14:52:22+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=STRATEGY_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-c51e58f08761
+2026-09-04T14:52:22+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg2 reason=STRATEGY_STOP_LOSS_HIT fill_price=0.0 order_id=VIRT-6f93d2059bd5
+2026-09-04T14:52:22+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:52:22+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=BROKER_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-4b952c0b75e7
+2026-09-04T14:52:22+0530 INFO token_router [TokenRouter] trigger RECOST_TRIGGERED strategy=s1 leg=leg1 ltp=99.8 reason=RECOST:rc1
+2026-09-04T14:52:22+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=strat1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T14:52:22+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=strat1 leg= ltp=-150.0 reason=strat1
+2026-09-04T14:52:22+0530 INFO token_router [TokenRouter] trigger SCHEDULED_ENTRY_READY strategy=s1 leg= ltp=0.0 reason=pend1
+2026-09-04T14:52:22+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:52:22+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T14:52:22+0530 INFO token_router [TokenRouter] trigger STRATEGY_LOCK_HIT strategy=s1 leg= ltp=150.0 reason=s1
+2026-09-04T15:05:23+0530 INFO token_router [TokenRouter] trigger LAZY_TRIGGERED strategy=s1 leg=leg1 ltp=110.0 reason=LAZY:lazy1
+2026-09-04T15:05:23+0530 INFO services.leg_followup [Followup] lazy watcher armed ref=lazy1 token=T2P reference_ltp=45.0
+2026-09-04T15:05:23+0530 WARNING services.leg_followup [Followup] NextLeg ref=does_not_exist not found in IdleLegConfigs for strategy=s1
+2026-09-04T15:05:23+0530 INFO services.leg_followup [Followup] recost watcher armed leg=leg1 token=T2 reference_price=100.0
+2026-09-04T15:05:23+0530 INFO services.leg_followup [Followup] leg=leg1 re-cost budget exhausted or no entry price, not armed
+2026-09-04T15:05:23+0530 INFO services.leg_followup [Followup] fresh entry leg=leg1_re1 token=T2 price=100.0 order_id=VIRT-235b9748999c
+2026-09-04T15:05:23+0530 INFO services.leg_followup [Followup] leg=leg1 skipped — strategy/broker not ACTIVE
+2026-09-04T15:05:23+0530 INFO services.leg_followup [Followup] leg=leg1 skipped — strategy/broker not ACTIVE
+2026-09-04T15:05:23+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T15:05:23+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=130.0 order_id=VIRT-e6a4237d3acf
+2026-09-04T15:05:23+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=s1 leg=leg1 ltp=70.0 reason=SL
+2026-09-04T15:05:23+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=70.0 order_id=VIRT-90f3a7e5f8b5
+2026-09-04T15:05:23+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=SL_HIT fill_price=0.0 order_id=VIRT-6b174e37a578
+2026-09-04T15:05:23+0530 WARNING orders.order_engine [OrderEngine] duplicate exit suppressed leg=leg1 reason=SL_HIT
+2026-09-04T15:05:23+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=s1 leg= ltp=-150.0 reason=s1
+2026-09-04T15:05:23+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=STRATEGY_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-262351e2df8f
+2026-09-04T15:05:23+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg2 reason=STRATEGY_STOP_LOSS_HIT fill_price=0.0 order_id=VIRT-32b80e0fd9dd
+2026-09-04T15:05:23+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T15:05:23+0530 INFO orders.order_engine [OrderEngine] leg exited leg=leg1 reason=BROKER_STOP_LOSS_HIT fill_price=102.0 order_id=VIRT-309ab4ccabf4
+2026-09-04T15:05:23+0530 INFO token_router [TokenRouter] trigger RECOST_TRIGGERED strategy=s1 leg=leg1 ltp=99.8 reason=RECOST:rc1
+2026-09-04T15:05:23+0530 INFO token_router [TokenRouter] trigger SL_HIT strategy=strat1 leg=leg1 ltp=130.0 reason=SL
+2026-09-04T15:05:23+0530 INFO token_router [TokenRouter] trigger STRATEGY_STOP_LOSS_HIT strategy=strat1 leg= ltp=-150.0 reason=strat1
+2026-09-04T15:05:23+0530 INFO token_router [TokenRouter] trigger SCHEDULED_ENTRY_READY strategy=s1 leg= ltp=0.0 reason=pend1
+2026-09-04T15:05:23+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T15:05:23+0530 INFO token_router [TokenRouter] trigger BROKER_STOP_LOSS_HIT strategy= leg= ltp=-150.0 reason=user100:dhan01
+2026-09-04T15:05:23+0530 INFO token_router [TokenRouter] trigger STRATEGY_LOCK_HIT strategy=s1 leg= ltp=150.0 reason=s1
+2026-09-04T15:14:06+0530 INFO main algo-trade-2_0 starting up
+2026-09-04T15:14:06+0530 INFO main instrument_master prewarmed: 0 tokens
+2026-09-04T15:14:06+0530 INFO persistence.recovery [Recovery] restored brokers=0 strategies=0 legs=0
+2026-09-04T15:14:06+0530 INFO main recovery: {'brokers': 0, 'strategies': 0, 'legs': 0}
+2026-09-04T15:14:06+0530 INFO shared.market.tick_client [TickClient] starting → ws://localhost:8013/ws/internal-ticks
+2026-09-04T15:14:06+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:14:08+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:14:10+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:14:12+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:14:14+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:14:16+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:14:18+0530 INFO main algo-trade-2_0 shutting down
+2026-09-04T15:15:12+0530 INFO main algo-trade-2_0 starting up
+2026-09-04T15:15:12+0530 INFO main instrument_master prewarmed: 0 tokens
+2026-09-04T15:15:12+0530 INFO persistence.recovery [Recovery] restored brokers=0 strategies=0 legs=0
+2026-09-04T15:15:12+0530 INFO main recovery: {'brokers': 0, 'strategies': 0, 'legs': 0}
+2026-09-04T15:15:12+0530 INFO shared.market.tick_client [TickClient] starting → ws://localhost:8013/ws/internal-ticks
+2026-09-04T15:15:12+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:15:14+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:15:16+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:15:18+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:15:20+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:15:22+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:15:24+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:15:26+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:15:28+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:15:30+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:15:32+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:15:34+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:15:36+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:15:38+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:15:39+0530 INFO main algo-trade-2_0 shutting down
+2026-09-04T15:20:47+0530 INFO main algo-trade-2_0 starting up
+2026-09-04T15:20:47+0530 INFO main instrument_master prewarmed: 0 tokens
+2026-09-04T15:20:47+0530 INFO persistence.recovery [Recovery] restored brokers=0 strategies=0 legs=0
+2026-09-04T15:20:47+0530 INFO main recovery: {'brokers': 0, 'strategies': 0, 'legs': 0}
+2026-09-04T15:20:47+0530 INFO shared.market.tick_client [TickClient] starting → ws://localhost:8013/ws/internal-ticks
+2026-09-04T15:20:47+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:20:49+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:20:51+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:20:53+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:20:55+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:20:57+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:20:59+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:21:01+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:21:03+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:21:05+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:21:07+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:21:09+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:21:11+0530 WARNING shared.market.tick_client [TickClient] WS error: [Errno 111] Connection refused — retry in 2s
+2026-09-04T15:21:12+0530 INFO main algo-trade-2_0 shutting down
