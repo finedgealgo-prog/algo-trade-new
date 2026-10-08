@@ -85,6 +85,14 @@ async def save_runtime_risk(payload: SaveRuntimeRiskRequest, user: dict = Depend
         "LockAndTrail": payload.LockAndTrail, "OverallTrailSL": payload.OverallTrailSL,
     }
     config = build_broker_risk_config(settings)
+    # Lock profit at/above its own trigger arms a floor the MTM is already
+    # under the moment the lock activates — an instant square-off (e.g.
+    # reaches 20000 / lock 160000 typo).
+    if config.trailing_mode in (TrailingMode.LOCK, TrailingMode.LOCK_AND_TRAIL) and 0 < config.activation_profit <= config.lock_profit:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Lock profit ({config.lock_profit:g}) must be less than 'If profit reaches' ({config.activation_profit:g}).",
+        )
     key = runtime_risk.risk_key(payload.scope, target_id)
     existing = token_router.runtime_risks.get(key)
 
@@ -102,8 +110,20 @@ async def save_runtime_risk(payload: SaveRuntimeRiskRequest, user: dict = Depend
         settings=settings, config=config,
     )
     if existing is not None and existing.status == "ACTIVE":
-        # Re-save keeps today's progress — a locked floor never drops back.
-        rr.peak, rr.floor, rr.trailing_activated = existing.peak, existing.floor, existing.trailing_activated
+        # Re-save keeps today's progress — a locked floor never drops back —
+        # but only while the lock/trail settings are unchanged. New lock/trail
+        # numbers start from zero: only profit reached AFTER this save counts
+        # toward "if profit reaches" (a peak from earlier in the day must not
+        # activate a lock the user just set), and a floor computed from the
+        # old numbers must not carry over above the current MTM. Same rule for
+        # Lock, Lock & Trail and Trail Stop Loss — in Trail SL mode (trail
+        # without a lock) the StopLoss amount is what trails, so it is part
+        # of that mode's settings too.
+        tracked = ["LockAndTrail", "OverallTrailSL"]
+        if not settings.get("LockAndTrail") and settings.get("OverallTrailSL"):
+            tracked.append("StopLoss")
+        if all(existing.settings.get(k) == settings.get(k) for k in tracked):
+            rr.peak, rr.floor, rr.trailing_activated = existing.peak, existing.floor, existing.trailing_activated
         rr.member_mtm = dict(existing.member_mtm)
     for s in members:
         rr.member_mtm[s.strategy_id] = s.mtm

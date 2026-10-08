@@ -225,6 +225,7 @@ def handle_scheduled_entry_ready(router: TokenRouter, order_engine: OrderEngine,
     )
     sl_tp_engine.initialize_sl_tp(leg)
     router.register_leg(leg)
+    order_engine.submit_live_entry(leg)  # real Delta order for a "live"-mode crypto leg
     # Unregister BEFORE the checkpoint so the snapshot never holds both the
     # entered leg and its pending entry (a restart would enter it twice).
     router.unregister_pending_entry(pending.pending_id)

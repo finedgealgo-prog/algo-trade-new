@@ -51,4 +51,10 @@ class BrokerRuntime:
     # with its risk settings disabled (services/broker_scope.reset_after_risk_exit)
     status: str = "ACTIVE"
 
+    # "fast-forward" (FastForward2, paper) or "live" (AlgoTrade2, real Delta
+    # orders) — which algo_borker_stoploss_settings row this broker's risk
+    # reads/writes. Broker connections are per mode (broker_type), so one
+    # broker_scope_id only ever runs under one mode.
+    activation_mode: str = "fast-forward"
+
     extra: dict[str, Any] = field(default_factory=dict)

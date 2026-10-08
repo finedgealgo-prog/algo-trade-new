@@ -149,6 +149,10 @@ class TokenRouter:
         # persists the state and pushes it to the page.
         self.runtime_risks: dict = {}
         self.runtime_risk_changed: set[str] = set()
+        # Called (loop thread) with a leg whose SL the trailing engine just
+        # moved — main.py points it at the live executor, which moves that
+        # leg's resting Delta stop too.
+        self.on_sl_moved = None
 
         self.trigger_log: list[TriggerEvent] = []
         self._trigger_listeners: list = []
@@ -566,6 +570,11 @@ class TokenRouter:
         if broker is not None:
             touched_broker_ids.add(broker.broker_scope_id)
 
+        if leg.awaiting_live_fill:
+            # Real entry still filling on Delta — SL/Target/Trail start from
+            # the real fill price, not this provisional one.
+            return
+
         # No event/checkpoint on a trail move itself — master-prompt's
         # "Checkpointing" section is explicit: "Do NOT write every TSL
         # movement to MongoDB", and TSL is deliberately absent from its
@@ -576,7 +585,11 @@ class TokenRouter:
         # true value from real Dhan historical candles on restart,
         # regardless of how long ago the last checkpoint was — that's
         # what actually closes this gap, not writing Mongo more often.
-        trailing_engine.apply_trailing(leg)
+        if trailing_engine.apply_trailing(leg) and self.on_sl_moved is not None:
+            try:
+                self.on_sl_moved(leg)
+            except Exception:
+                log.exception("[TokenRouter] on_sl_moved failed leg=%s", leg.leg_id)
 
         sl_hit, sl_price = sl_tp_engine.check_leg_sl(leg)
         if sl_hit:

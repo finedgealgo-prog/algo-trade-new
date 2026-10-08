@@ -56,6 +56,7 @@ from api.routers import crypto_straddle as crypto_straddle_router
 from api.routers import straddle_alert as straddle_alert_router
 from api.routers import runtime_risk as runtime_risk_router
 from api.live_broadcast import broadcast_tick_update, refresh_legacy_open_tokens
+from orders.live_executor import LiveOrderExecutor
 from orders.order_engine import OrderEngine
 from persistence import recovery
 from persistence.checkpoint import checkpoint_strategy, get_checkpoint_writer
@@ -158,9 +159,54 @@ def _schedule_runtime_risk_publish(rr) -> None:
 
 tick_client.add_listener(_ws_broadcast_listener)
 
-# Virtual-only for this phase (see orders/order_engine.py docstring) — swap
-# VirtualBrokerAdapter() for a real DhanAdapter instance to go live later.
-order_engine = OrderEngine(token_router, VirtualBrokerAdapter())
+# Paper fills for every leg (VirtualBrokerAdapter); on top of that, crypto
+# legs of "live"-mode strategies (AlgoTrade2.tsx) are mirrored onto the real
+# Delta account by the live executor — inert unless LIVE_ORDER_ENABLED.
+live_executor = LiveOrderExecutor(token_router, get_mongo())
+order_engine = OrderEngine(token_router, VirtualBrokerAdapter(), live=live_executor)
+
+
+def _on_live_order_change(strategy_id: str) -> None:
+    """A real fill / rejection changed a leg (live_executor reconciliation,
+    on the loop thread): checkpoint it, push it to the user's page, and
+    finalize the strategy if that left it with no open legs (a rejected
+    entry aborts its leg)."""
+    strategy = token_router.strategies.get(strategy_id)
+    if strategy is None:
+        return
+    checkpoint_strategy(token_router, strategy_id)
+    if strategy.user_id:
+        from api.ws_client_hub import execute_orders_hub
+
+        legs = [token_router.legs[lid] for lid in strategy.leg_ids if lid in token_router.legs]
+        lazy_watchers = [w for w in token_router.lazy_watchers.values() if w.strategy_id == strategy_id]
+        record = strategy_to_doc(strategy, legs, lazy_watchers)
+        try:
+            asyncio.get_running_loop().create_task(execute_orders_hub.send_to_user(strategy.user_id, {"data": {"records": [record]}}))
+        except RuntimeError:
+            pass
+    strategy_finalize.finalize_and_publish(token_router, strategy_id)
+
+
+live_executor.on_strategy_changed = _on_live_order_change
+token_router.on_sl_moved = live_executor.sync_stop
+
+
+def _on_broker_stop_filled(leg_id: str, fill_price: float) -> None:
+    """A protective stop resting on Delta filled (exchange-side SL — e.g.
+    hit while this server was down or between ticks): exit the leg in the
+    engine at that fill. live_executor sends no order for it — Delta
+    already closed the position."""
+    leg = token_router.legs.get(leg_id)
+    if leg is None or leg.status != "ACTIVE":
+        return
+    if fill_price > 0:
+        leg.current_price = fill_price
+    order_engine.manual_square_off(leg_id, reason="BROKER_SL_HIT")
+    strategy_finalize.finalize_and_publish(token_router, leg.strategy_id)
+
+
+live_executor.on_broker_stop_filled = _on_broker_stop_filled
 
 
 def _on_leg_exit_arm_followup(event) -> None:
@@ -791,6 +837,12 @@ async def on_startup() -> None:
     gap_summary = gap_recovery.recover_tsl_gaps(token_router, get_mongo())
     log.info("gap_recovery: %s", gap_summary)
 
+    # Protective stops still resting on Delta for recovered live legs —
+    # watch them again (a stop that fired while we were down exits its leg).
+    await asyncio.to_thread(live_executor.load_stops)
+    await asyncio.to_thread(live_executor.ensure_recovered_stops)
+    live_executor.start_stop_poller(asyncio.get_running_loop())
+
     _background_tasks.append(asyncio.create_task(_periodic_checkpoint_loop(), name="periodic_checkpoint"))
     _background_tasks.append(asyncio.create_task(_legacy_open_tokens_loop(), name="legacy_open_tokens_refresh"))
     _background_tasks.append(asyncio.create_task(_delta_instrument_cache_loop(), name="delta_instrument_cache_refresh"))
@@ -820,6 +872,8 @@ async def on_shutdown() -> None:
         checkpoint_strategy(token_router, strategy_id)
     for broker in token_router.brokers.values():
         checkpoint_writer.queue_broker(broker_to_doc(broker))
+    # Let in-flight real orders finish (their fills reconcile on this loop).
+    await asyncio.to_thread(live_executor.shutdown)
     await checkpoint_writer.stop()
     from api.ws_client_hub import update_hub, execute_orders_hub
     await asyncio.gather(update_hub.close(), execute_orders_hub.close())

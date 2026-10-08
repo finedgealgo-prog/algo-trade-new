@@ -225,7 +225,7 @@ def strategy_to_doc(strategy: StrategyRuntime, legs: list[LegRuntime], lazy_watc
         "ticker": underlying,
         "status": _strategy_status_string(strategy),
         "active_on_server": strategy.status != "EXITED",
-        "activation_mode": "fast-forward",
+        "activation_mode": strategy.activation_mode or "fast-forward",
         "broker": strategy.broker_scope_id,
         "broker_label": strategy.broker_scope_id.split(":", 1)[-1] if strategy.broker_scope_id else "",
         # Looked up once at activation (services/strategy_activation.py),
@@ -282,6 +282,7 @@ def strategy_to_doc(strategy: StrategyRuntime, legs: list[LegRuntime], lazy_watc
         # its actual legs).
         "_runtime_full_strategy_cfg": strategy.full_strategy_cfg,
         "_runtime_broker_scope_id": strategy.broker_scope_id,
+        "_runtime_live_order_type": strategy.live_order_type,
         "_runtime_mtm": strategy.mtm,
         "_runtime_peak_mtm": strategy.peak_mtm,
         "_runtime_current_overall_sl_threshold": strategy.current_overall_sl_threshold,
@@ -322,6 +323,8 @@ def doc_to_strategy_kwargs(doc: dict[str, Any]) -> dict[str, Any]:
         "user_id": doc.get("user_id") or "",
         "name": doc.get("name") or "",
         "is_direct_strategy": bool(doc.get("_runtime_is_direct_strategy", True)),
+        "activation_mode": doc.get("activation_mode") or "fast-forward",
+        "live_order_type": doc.get("_runtime_live_order_type") or "",
         "group_id": doc.get("_runtime_group_id") or "",
         "group_name": doc.get("_runtime_group_name") or "",
         "portfolio_id": doc.get("_runtime_portfolio_id") or "",
@@ -634,6 +637,8 @@ def load_legacy_execute_order_records(mongo: Any, activation_mode: str, user_id:
     placed it. Purely a display-data fix, not a management/ownership one."""
     query: dict[str, Any] = {
         "activation_mode": activation_mode,
+        # Squared-off strategies the user archived from the page.
+        "archived": {"$ne": True},
     }
     if user_id:
         query["user_id"] = user_id

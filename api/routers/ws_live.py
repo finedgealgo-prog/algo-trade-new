@@ -29,17 +29,68 @@ from __future__ import annotations
 import json
 import uuid
 
-from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
+from datetime import datetime, timezone
+from typing import Any
+
+from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
+from pydantic import BaseModel
 
 from api.live_broadcast import broadcast_strategy_snapshots
 from api.ws_client_hub import execute_orders_hub, update_hub
 from persistence.serializers import _today_ist_date, load_legacy_broker_settings, load_legacy_execute_order_records
+from shared.auth.dependency import get_current_user
 from shared.db.mongo import get_mongo
 from shared.logging.logger import get_logger
 
 log = get_logger(__name__)
 
+
+def squared_off_targets(token_router, user_id: str, mode: str, strategy_id: str = "", group_id: str = "") -> list[str]:
+    """Strategies a page's Square Off / Cancel Deployment applies to: one
+    strategy, one portfolio group (a direct strategy's group key is its own
+    id), or — neither given — every one of the user's strategies of that
+    page's activation mode."""
+    out = []
+    for sid, s in list(token_router.strategies.items()):
+        if user_id != "anonymous" and s.user_id not in ("", "debug", user_id):
+            continue
+        if (s.activation_mode or "fast-forward") != mode:
+            continue
+        if strategy_id and sid != strategy_id:
+            continue
+        if not strategy_id and group_id and group_id not in (s.group_id, sid):
+            continue
+        out.append(sid)
+    return out
+
 router = APIRouter(prefix="/algo", tags=["ws-live"])
+
+
+class ArchiveRequest(BaseModel):
+    strategy_ids: list[str]
+
+
+@router.post("/execute-orders/archive")
+def archive_strategies(payload: ArchiveRequest, user: dict = Depends(get_current_user)) -> dict:
+    """FastForward2/AlgoTrade2's Archive button: hides squared-off
+    strategies (a strategy card, or every member of a portfolio card) from
+    the page for good — load_legacy_execute_order_records skips archived
+    docs. A strategy still running in this engine is never archived."""
+    from main import token_router
+
+    ids = [str(i).strip() for i in payload.strategy_ids if str(i).strip()]
+    running = [i for i in ids if i in token_router.strategies]
+    archivable = [i for i in ids if i not in token_router.strategies]
+    archived = 0
+    if archivable:
+        query: dict[str, Any] = {"_id": {"$in": archivable}, "active_on_server": {"$ne": True}}
+        if user.get("_id"):
+            query["user_id"] = str(user["_id"])
+        archived = get_mongo().raw["algo_trades"].update_many(
+            query, {"$set": {"archived": True, "archived_at": datetime.now(timezone.utc).isoformat()}},
+        ).modified_count
+    log.info("[archive] user=%s archived=%d skipped_running=%s", user.get("_id"), archived, running)
+    return {"success": True, "archived": archived, "skipped_running": running}
 
 
 @router.websocket("/ws/update")
@@ -136,6 +187,24 @@ async def ws_execute_orders(websocket: WebSocket, activation_mode: str = Query(d
             try:
                 msg = json.loads(raw)
             except Exception:
+                continue
+            if msg.get("type") in ("squared-off", "cancel-deployment"):
+                # FastForward2/AlgoTrade2's Square Off (strategy / portfolio
+                # group), Square Off All (no ids) and Cancel Deployment —
+                # whole-strategy exits: open legs closed, pending entries and
+                # re-entry/lazy/recost watchers cancelled, strategy finalized.
+                # Only this user's strategies of this page's own mode, so
+                # Square Off All on one page never touches the other's.
+                target_strategy = str(msg.get("strategy_id") or "").strip()
+                target_group = str(msg.get("group_id") or "").strip()
+                if msg.get("type") == "cancel-deployment" and not (target_strategy or target_group):
+                    continue
+                from services import strategy_finalize
+                squared = squared_off_targets(token_router, user_id, normalized_mode, target_strategy, target_group)
+                for sid in squared:
+                    strategy_finalize.square_off_strategy(token_router, order_engine, sid, reason="MANUAL_SQUARE_OFF")
+                log.info("[ws/execute-orders] %s user=%s mode=%s strategy=%s group=%s -> squared off %s",
+                         msg.get("type"), user_id, normalized_mode, target_strategy or "-", target_group or "-", squared)
                 continue
             if msg.get("type") == "square_off":
                 leg_id = str(msg.get("leg_id") or "")

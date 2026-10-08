@@ -226,6 +226,13 @@ def _leg_qty(leg_cfg: dict, lot_size: int, multiplier: int = 1) -> int:
     return max(1, lots) * max(1, int(multiplier or 1)) * max(1, lot_size)
 
 
+def live_order_type_from_doc(strategy_doc: dict) -> str:
+    """Edit Setup / Edit Config's Order Type (execution_config_base.OrderType):
+    "market" / "limit", "" when not set (server default applies)."""
+    value = str((strategy_doc.get("execution_config_base") or {}).get("OrderType") or "").strip().lower()
+    return value if value in ("market", "limit") else ""
+
+
 def qty_multiplier_from_doc(strategy_doc: dict) -> int:
     """Edit Setup's Quantity Multiplier (execution_config_base.Multiplier)."""
     base = strategy_doc.get("execution_config_base") or {}
@@ -252,6 +259,7 @@ async def activate_strategy(
     qty_multiplier: int | None = None,
     slippage_pct: float = 0.0,
     skip_entry_time: bool = False,
+    activation_mode: str = broker_scope.ACTIVATION_MODE,
 ) -> dict[str, Any]:
     """`qty_multiplier`: the activation screen's Qty Multiplier (portfolio
     row × portfolio qty) — when given it replaces the strategy's saved Edit
@@ -259,7 +267,12 @@ async def activate_strategy(
 
     `skip_entry_time`: enter legs right now, ignoring the strategy's
     configured entry time — used by the crypto straddle spike alert
-    (services/straddle_alert.py), where the alert trigger IS the entry signal."""
+    (services/straddle_alert.py), where the alert trigger IS the entry signal.
+
+    `activation_mode`: "fast-forward" (FastForward2, paper fills) or "live"
+    (AlgoTrade2 — crypto legs are also placed on the real Delta account,
+    orders/live_executor.py). A live activation is refused unless real
+    orders are switched on and the broker's Delta credentials authenticate."""
     _source_id = str(strategy_doc.get("_id") or "-")
     _trace("", "activate_strategy_called", source_strategy_id=_source_id, name=strategy_doc.get("name"), broker_scope_id=broker_scope_id, user_id=user_id)
 
@@ -275,14 +288,33 @@ async def activate_strategy(
         raise ActivationError("Strategy has no legs configured")
     _trace("", "leg_configs_loaded", source_strategy_id=_source_id, underlying=underlying, leg_count=len(leg_configs))
 
+    activation_mode = str(activation_mode or "").strip() or broker_scope.ACTIVATION_MODE
+    if activation_mode not in broker_scope.ACTIVATION_MODES:
+        raise ActivationError(f"Unsupported activation_mode '{activation_mode}'")
+    if activation_mode == broker_scope.LIVE_MODE:
+        live = getattr(order_engine, "live", None)
+        if live is None or not live.enabled:
+            _trace("", "activate_rejected", source_strategy_id=_source_id, reason="live_orders_disabled")
+            raise ActivationError("Real orders are switched off on the server (LIVE_ORDER_ENABLED) — live activation refused")
+        if not delta_client.asset_for_token(underlying):
+            raise ActivationError("Live (real order) activation supports crypto (Delta) strategies only")
+        ready, reason = await asyncio.to_thread(live.check_ready, broker_scope_id)
+        if not ready:
+            _trace("", "activate_rejected", source_strategy_id=_source_id, reason="live_broker_not_ready", detail=reason)
+            raise ActivationError(reason)
+
+    existing_broker = router.brokers.get(broker_scope_id)
+    if existing_broker is not None and existing_broker.activation_mode != activation_mode:
+        raise ActivationError(f"Broker {broker_scope_id} is already running {existing_broker.activation_mode} strategies — use a {activation_mode} broker")
+
     if broker_scope_id and broker_scope_id not in router.brokers:
         try:
-            settings_doc = await asyncio.to_thread(broker_scope.load_broker_settings, mongo, user_id, broker_scope_id)
+            settings_doc = await asyncio.to_thread(broker_scope.load_broker_settings, mongo, user_id, broker_scope_id, activation_mode)
             closed_mtm = await asyncio.to_thread(broker_scope.closed_day_mtm, mongo, broker_scope_id)
         except Exception:
             log.exception("[Activation] broker settings load failed broker=%s", broker_scope_id)
             settings_doc, closed_mtm = None, 0.0
-        broker_scope.ensure_broker_runtime(router, broker_scope_id, user_id, settings_doc, closed_mtm)
+        broker_scope.ensure_broker_runtime(router, broker_scope_id, user_id, settings_doc, closed_mtm, activation_mode)
     broker = router.brokers.get(broker_scope_id)
     if broker is not None and broker.status != "ACTIVE":
         _trace("", "activate_rejected", source_strategy_id=_source_id, reason="broker_not_active", broker_scope_id=broker_scope_id, broker_status=broker.status)
@@ -305,7 +337,7 @@ async def activate_strategy(
     # real trade_portfolio here, same as the old system's own single-
     # strategy shadow-portfolio path does.
     daily_trade_portfolio, daily_trade_group_portfolio = await asyncio.to_thread(
-        daily_portfolio.resolve_daily_portfolio, mongo, "fast-forward", underlying,
+        daily_portfolio.resolve_daily_portfolio, mongo, activation_mode, underlying,
     )
     _trace(strategy_id, "daily_portfolio_resolved", trade_portfolio=daily_trade_portfolio, trade_group_portfolio=daily_trade_group_portfolio)
     # strategy_group_id is the one genuinely per-strategy id here — fresh,
@@ -336,7 +368,8 @@ async def activate_strategy(
         pass
     strategy_runtime = StrategyRuntime(
         strategy_id=strategy_id, user_id=user_id, name=str(strategy_doc.get("name") or strategy_id),
-        is_direct_strategy=is_direct_strategy,
+        is_direct_strategy=is_direct_strategy, activation_mode=activation_mode,
+        live_order_type=live_order_type_from_doc(strategy_doc),
         group_id=group_id, group_name=group_name, portfolio_id=portfolio_id,
         trade_portfolio=daily_trade_portfolio, trade_group_portfolio=daily_trade_group_portfolio, strategy_group_id=strategy_group_id,
         broker_details=broker_details,
@@ -640,6 +673,7 @@ async def _complete_leg_entry(
             )
             sl_tp_engine.initialize_sl_tp(leg)
             router.register_leg(leg)
+            order_engine.submit_live_entry(leg)  # real Delta order for a "live"-mode crypto leg
             leg_ids.append(leg_id)
             log.info(
                 "[Activation] leg entered leg=%s token=%s strike=%s entry=%s order_id=%s",
@@ -824,6 +858,7 @@ async def handle_overall_reentry(
             )
             sl_tp_engine.initialize_sl_tp(leg)
             router.register_leg(leg)
+            order_engine.submit_live_entry(leg)  # real Delta order for a "live"-mode crypto leg
             leg_ids.append(leg_id)
             log.info("[OverallReentry] strategy=%s leg entered leg=%s token=%s price=%s order_id=%s", strategy_id, leg_id, selection.token, selection.ltp, order_id)
 

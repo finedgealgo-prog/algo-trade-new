@@ -67,6 +67,8 @@ class ActivateRequest(BaseModel):
     portfolio_id: Optional[str] = None
     group_id: Optional[str] = None
     group_name: Optional[str] = None
+    # "fast-forward" (FastForward2, paper) / "live" (AlgoTrade2, real orders).
+    activation_mode: Optional[str] = None
 
 
 class ExecutionSettings(BaseModel):
@@ -271,6 +273,7 @@ async def activate(strategy_id: str, payload: ActivateRequest, user: dict = Depe
             doc, str(user.get("_id") or ""), broker_scope_id,
             is_direct_strategy=not portfolio_id,
             group_id=group_id, group_name=(payload.group_name or "").strip(), portfolio_id=portfolio_id,
+            activation_mode=(payload.activation_mode or "").strip() or "fast-forward",
         )
     except ActivationError as exc:
         raise HTTPException(status_code=422, detail=str(exc))

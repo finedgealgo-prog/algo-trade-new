@@ -34,6 +34,15 @@ class StrategyRuntime:
     # portfolio.py explicitly sets it False for each member it activates.
     is_direct_strategy: bool = True
 
+    # "fast-forward" (FastForward2.tsx — paper fills only) or "live"
+    # (AlgoTrade2.tsx — crypto legs also placed on the real Delta account by
+    # orders/live_executor.py). Each page lists only its own mode's records.
+    activation_mode: str = "fast-forward"
+    # Real-order type for a "live" strategy's crypto legs — "market" or
+    # "limit" (Edit Setup / Edit Config: execution_config_base.OrderType);
+    # "" = server default (LIVE_ORDER_TYPE).
+    live_order_type: str = ""
+
     # UTC "YYYY-MM-DD HH:MM:SS" (no timezone marker — matches FastForward2.
     # tsx's/LiveTrade.tsx's own `entry_time` convention exactly, see that
     # component's toUtcMs comment) — set only for a time-gated activation

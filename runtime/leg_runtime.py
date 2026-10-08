@@ -65,6 +65,11 @@ class LegRuntime:
     slippage_pct: float = 0.0
     entry_slippage_applied: bool = False
 
+    # Live (real-order) leg whose Delta entry fill hasn't come back yet: its
+    # SL/Target/Trail are not evaluated until the real fill price becomes
+    # entry_price (orders/live_executor.py clears this on the fill).
+    awaiting_live_fill: bool = False
+
     # True UTC "YYYY-MM-DD HH:MM:SS" — when the leg entered / exited. Sent as
     # entry_trade/exit_trade.traded_timestamp (FastForward2's MTM graph
     # starts/stops each leg's P&L line at these minutes).

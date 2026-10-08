@@ -29,12 +29,17 @@ from token_router import TokenRouter
 log = get_logger(__name__)
 
 ACTIVATION_MODE = "fast-forward"
+LIVE_MODE = "live"
+FORWARD_TEST_MODE = "forward-test"
+# Paper modes (fast-forward, forward-test) get virtual fills only; "live"
+# (AlgoTrade2) also places real Delta orders (orders/live_executor.py).
+ACTIVATION_MODES = (ACTIVATION_MODE, FORWARD_TEST_MODE, LIVE_MODE)
 
 
-def load_broker_settings(mongo: Mongo, user_id: str, broker_scope_id: str) -> dict[str, Any] | None:
+def load_broker_settings(mongo: Mongo, user_id: str, broker_scope_id: str, activation_mode: str = ACTIVATION_MODE) -> dict[str, Any] | None:
     """Blocking Mongo read — call via asyncio.to_thread from async code."""
     collection = mongo.raw["algo_borker_stoploss_settings"]
-    query: dict[str, Any] = {"broker": broker_scope_id, "activation_mode": ACTIVATION_MODE}
+    query: dict[str, Any] = {"broker": broker_scope_id, "activation_mode": activation_mode}
     if user_id:
         doc = collection.find_one({**query, "user_id": user_id})
         if doc is not None:
@@ -71,7 +76,7 @@ def rebase_day_mtm(router: TokenRouter, mongo: Mongo) -> None:
       strategies running now (RAM)."""
     for broker in router.brokers.values():
         try:
-            settings_doc = load_broker_settings(mongo, broker.user_id, broker.broker_scope_id)
+            settings_doc = load_broker_settings(mongo, broker.user_id, broker.broker_scope_id, broker.activation_mode)
         except Exception:
             log.exception("[BrokerScope] settings reload failed broker=%s", broker.broker_scope_id)
             settings_doc = None
@@ -87,7 +92,7 @@ def rebase_day_mtm(router: TokenRouter, mongo: Mongo) -> None:
             _seed_lock_state(broker, settings_doc or {})
 
 
-def ensure_broker_runtime(router: TokenRouter, broker_scope_id: str, user_id: str, settings_doc: dict[str, Any] | None, closed_mtm: float = 0.0) -> BrokerRuntime | None:
+def ensure_broker_runtime(router: TokenRouter, broker_scope_id: str, user_id: str, settings_doc: dict[str, Any] | None, closed_mtm: float = 0.0, activation_mode: str = ACTIVATION_MODE) -> BrokerRuntime | None:
     """Registers a BrokerRuntime for `broker_scope_id` if none is live yet,
     configured from `settings_doc` (see load_broker_settings). An already
     registered broker is returned untouched — its day MTM, lock state and
@@ -97,7 +102,7 @@ def ensure_broker_runtime(router: TokenRouter, broker_scope_id: str, user_id: st
     broker = router.brokers.get(broker_scope_id)
     if broker is not None:
         return broker
-    broker = BrokerRuntime(broker_scope_id=broker_scope_id, user_id=user_id, mtm=closed_mtm, peak_pnl=closed_mtm)
+    broker = BrokerRuntime(broker_scope_id=broker_scope_id, user_id=user_id, mtm=closed_mtm, peak_pnl=closed_mtm, activation_mode=activation_mode)
     if settings_active(settings_doc):
         broker.config = build_broker_risk_config(settings_doc or {})
     router.register_broker(broker)
@@ -139,7 +144,7 @@ def _seed_lock_state(broker: BrokerRuntime, settings_doc: dict[str, Any]) -> Non
 def save_lock_state(mongo: Mongo, broker: BrokerRuntime) -> None:
     """Blocking — writes the broker's live lock/trail state to its saved
     settings doc (algo_borker_stoploss_settings)."""
-    query: dict[str, Any] = {"broker": broker.broker_scope_id, "activation_mode": ACTIVATION_MODE}
+    query: dict[str, Any] = {"broker": broker.broker_scope_id, "activation_mode": broker.activation_mode}
     if broker.user_id:
         query["user_id"] = broker.user_id
     state = {**risk_state(broker), "lock_state_date": _today_ist_date()}
@@ -159,7 +164,7 @@ async def publish_lock_state(broker: BrokerRuntime, mongo: Mongo | None = None) 
         await asyncio.to_thread(save_lock_state, target, broker)
         if not broker.user_id:
             return
-        rows = await asyncio.to_thread(load_legacy_broker_settings, target, broker.user_id, ACTIVATION_MODE)
+        rows = await asyncio.to_thread(load_legacy_broker_settings, target, broker.user_id, broker.activation_mode)
         if rows:
             await execute_orders_hub.send_to_user(broker.user_id, {
                 "type": "broker-settings", "message": "Broker settings updated", "data": {"brokers": rows},
@@ -182,13 +187,13 @@ def schedule_publish_lock_state(broker: BrokerRuntime) -> None:
     task.add_done_callback(_publish_tasks.discard)
 
 
-def disable_saved_settings(mongo: Mongo, broker_scope_id: str, user_id: str) -> None:
+def disable_saved_settings(mongo: Mongo, broker_scope_id: str, user_id: str, activation_mode: str = ACTIVATION_MODE) -> None:
     """Blocking — after a broker SL/Target/Lock/Trail hit: the saved doc goes
     inactive (status 0) AND its values are emptied, so FastForward2's Broker
     Settings card/modal show blank ("-") instead of the spent values, and
     nothing is re-applied on the next activation/restart until the user
     saves new settings."""
-    query: dict[str, Any] = {"broker": broker_scope_id, "activation_mode": ACTIVATION_MODE}
+    query: dict[str, Any] = {"broker": broker_scope_id, "activation_mode": activation_mode}
     if user_id:
         query["user_id"] = user_id
     mongo.raw["algo_borker_stoploss_settings"].update_many(query, {"$set": {
@@ -222,7 +227,7 @@ def reset_after_risk_exit(broker: BrokerRuntime, mongo: Mongo | None = None) -> 
         target = mongo or get_mongo()
 
         async def _disable_and_publish() -> None:
-            await asyncio.to_thread(disable_saved_settings, target, broker.broker_scope_id, broker.user_id)
+            await asyncio.to_thread(disable_saved_settings, target, broker.broker_scope_id, broker.user_id, broker.activation_mode)
             await publish_lock_state(broker, target)  # page gets the emptied settings right away
 
         task = asyncio.get_running_loop().create_task(_disable_and_publish())
@@ -248,7 +253,7 @@ def _attach_running_positions(router: TokenRouter, broker: BrokerRuntime) -> Non
                 broker.leg_ids.add(leg_id)
 
 
-def apply_live_settings(router: TokenRouter, broker_scope_id: str, user_id: str, settings_doc: dict[str, Any], closed_mtm: float = 0.0) -> BrokerRuntime | None:
+def apply_live_settings(router: TokenRouter, broker_scope_id: str, user_id: str, settings_doc: dict[str, Any], closed_mtm: float = 0.0, activation_mode: str = ACTIVATION_MODE) -> BrokerRuntime | None:
     """Applies a broker SL/Target/Lock/Trail save to the LIVE engine, so it
     takes effect on already-running strategies from the very next tick:
 
@@ -263,7 +268,11 @@ def apply_live_settings(router: TokenRouter, broker_scope_id: str, user_id: str,
     if broker is None:
         if not any(s.broker_scope_id == broker_scope_id and s.status != "EXITED" for s in router.strategies.values()):
             return None
-        return ensure_broker_runtime(router, broker_scope_id, user_id, settings_doc, closed_mtm)
+        return ensure_broker_runtime(router, broker_scope_id, user_id, settings_doc, closed_mtm, activation_mode)
+    if broker.activation_mode != activation_mode:
+        # Settings saved for this broker under the other page's mode — not
+        # the ones this running broker evaluates.
+        return broker
     new_config = build_broker_risk_config(settings_doc) if settings_active(settings_doc) else RiskConfig()
     if new_config != broker.config:
         broker.config = new_config

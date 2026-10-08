@@ -46,6 +46,8 @@ class SavePortfolioRequest(BaseModel):
 
 class ActivatePortfolioRequest(BaseModel):
     broker_scope_id: str
+    # "fast-forward" (FastForward2, paper) / "live" (AlgoTrade2, real orders).
+    activation_mode: Optional[str] = None
 
 
 class ExecutionSettingsBody(BaseModel):
@@ -488,6 +490,8 @@ async def activate_prepared_trades(payload: dict, user: dict = Depends(get_curre
                 group_id=group_id, group_name=group_name, portfolio_id=portfolio_id,
                 qty_multiplier=activation_multiplier,
                 slippage_pct=activation_slippage,
+                # PortfolioActivation.tsx stamps each trade with its page's mode.
+                activation_mode=str(item.get("activation_mode") or payload.get("activation_mode") or "").strip() or "fast-forward",
             )
             results.append({"strategy_id": strategy_id, "success": True, **result})
         except ActivationError as exc:
@@ -542,6 +546,7 @@ async def activate_portfolio(portfolio_id: str, payload: ActivatePortfolioReques
                 token_router, order_engine, get_instrument_master(), get_ltp_cache(), mongo,
                 strategy_doc, user_id, payload.broker_scope_id, is_direct_strategy=False,
                 group_id=group_id, group_name=group_name, portfolio_id=portfolio_id,
+                activation_mode=(payload.activation_mode or "").strip() or "fast-forward",
             )
             results.append({"strategy_id": strategy_id, "success": True, **result})
         except ActivationError as exc:

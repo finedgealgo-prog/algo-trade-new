@@ -258,6 +258,7 @@ async def _complete_range_entry(router: TokenRouter, order_engine: OrderEngine, 
     )
     sl_tp_engine.initialize_sl_tp(leg)
     router.register_leg(leg)
+    order_engine.submit_live_entry(leg)  # real Delta order for a "live"-mode crypto leg
     watcher.state = "Entered"
     router.unregister_range_watcher(watcher.range_id)
     checkpoint_strategy(router, watcher.strategy_id)

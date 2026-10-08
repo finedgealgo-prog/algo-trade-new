@@ -264,6 +264,7 @@ def _enter_fresh_leg(router: TokenRouter, order_engine: OrderEngine, parent_leg:
     )
     sl_tp_engine.initialize_sl_tp(new_leg)
     router.register_leg(new_leg)
+    order_engine.submit_live_entry(new_leg)  # real Delta order for a "live"-mode crypto leg
     checkpoint_strategy(router, new_leg.strategy_id)
     log.info("[Followup] fresh entry leg=%s token=%s price=%s order_id=%s", new_leg.leg_id, selection.token, selection.ltp, order_id)
 
@@ -315,6 +316,7 @@ def complete_lazy_entry(router: TokenRouter, order_engine: OrderEngine, lazy_id:
     )
     sl_tp_engine.initialize_sl_tp(new_leg)
     router.register_leg(new_leg)
+    order_engine.submit_live_entry(new_leg)  # real Delta order for a "live"-mode crypto leg
     router.unregister_lazy_watcher(lazy_id)
     checkpoint_strategy(router, lazy.strategy_id)
     log.info("[Followup] lazy entry completed leg=%s token=%s price=%s order_id=%s", new_leg.leg_id, lazy.token, price, order_id)
@@ -358,6 +360,7 @@ def complete_recost_entry(router: TokenRouter, order_engine: OrderEngine, recost
     )
     sl_tp_engine.initialize_sl_tp(new_leg)
     router.register_leg(new_leg)
+    order_engine.submit_live_entry(new_leg)  # real Delta order for a "live"-mode crypto leg
     router.unregister_recost_watcher(recost_id)
     checkpoint_strategy(router, strategy.strategy_id)
     log.info("[Followup] recost entry completed leg=%s token=%s price=%s order_id=%s", new_leg.leg_id, parent_leg.token, price, order_id)
