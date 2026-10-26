@@ -55,6 +55,7 @@ from api.routers import flattrade_oauth as flattrade_oauth_router
 from api.routers import crypto_straddle as crypto_straddle_router
 from api.routers import straddle_alert as straddle_alert_router
 from api.routers import runtime_risk as runtime_risk_router
+from api.routers import auto_activation as auto_activation_router
 from api.live_broadcast import broadcast_tick_update, refresh_legacy_open_tokens
 from orders.live_executor import LiveOrderExecutor
 from orders.order_engine import OrderEngine
@@ -97,6 +98,7 @@ app.include_router(crypto_straddle_router.router)
 app.include_router(straddle_alert_router.router)
 app.include_router(straddle_alert_router.monitor_router)
 app.include_router(runtime_risk_router.router)
+app.include_router(auto_activation_router.router)
 
 settings = get_settings()
 tick_client = TickClient(settings.websocket_base_url, get_ltp_cache())
@@ -733,6 +735,54 @@ async def _daily_eod_square_off_loop() -> None:
 _CRYPTO_EXPIRY_POLL_SECONDS = 30
 
 
+_AUTO_ACTIVATION_POLL_SECONDS = 30
+
+
+def _auto_activation_notify(user_id: str, event_type: str, message: str) -> None:
+    from features.telegram_notifier import notify_user_for  # type: ignore
+
+    notify_user_for(user_id or None, event_type, message, category="algo")
+
+
+async def _auto_activation_loop() -> None:
+    """Portfolio Auto Activate — every day at 17:31 IST (5:31 PM), activate each
+    enabled portfolio's strategies scheduled for that day (services/
+    auto_activation.py). Polls, so a restart after 17:31 still runs that
+    day's activation; the per-day claim makes it exactly-once."""
+    from api.live_broadcast import broadcast_strategy_snapshots
+    from api.routers.portfolio import _resolve_activation_group
+    from services import auto_activation
+
+    mongo = get_mongo()
+
+    async def _activate(strategy_doc, user_id, broker_scope_id, **kwargs):
+        return await strategy_activation.activate_strategy(
+            token_router, order_engine, get_instrument_master(), get_ltp_cache(), mongo,
+            strategy_doc, user_id, broker_scope_id, **kwargs,
+        )
+
+    while True:
+        await asyncio.sleep(_AUTO_ACTIVATION_POLL_SECONDS)
+        try:
+            day = auto_activation.now_ist()
+            if day.time() < auto_activation.RUN_AT_IST:
+                continue
+            date = day.strftime("%Y-%m-%d")
+            cfgs = await asyncio.to_thread(lambda: list(mongo.raw[auto_activation.COLLECTION].find({"enabled": True, "last_run_date": {"$ne": date}})))
+            for cfg in cfgs:
+                if not await asyncio.to_thread(auto_activation.claim, mongo, cfg["_id"], day):
+                    continue
+                summary = await auto_activation.run_one(
+                    cfg, day, token_router=token_router, order_engine=order_engine, mongo=mongo,
+                    activate=_activate, resolve_group=_resolve_activation_group, notify=_auto_activation_notify,
+                )
+                activated = [r["strategy_id"] for r in summary.get("results", []) if r.get("success")]
+                if activated:
+                    await broadcast_strategy_snapshots(token_router, activated)
+        except Exception:
+            log.exception("[AutoActivation] loop cycle failed")
+
+
 async def _crypto_expiry_square_off_loop() -> None:
     """A Delta option leg still open at its contract's expiry (17:30 IST)
     would otherwise sit ACTIVE with a frozen last mark — the contract stops
@@ -850,6 +900,7 @@ async def on_startup() -> None:
     _background_tasks.append(asyncio.create_task(_daily_eod_square_off_loop(), name="daily_eod_square_off"))
     _background_tasks.append(asyncio.create_task(_range_breakout_loop(), name="range_breakout"))
     _background_tasks.append(asyncio.create_task(_crypto_expiry_square_off_loop(), name="crypto_expiry_square_off"))
+    _background_tasks.append(asyncio.create_task(_auto_activation_loop(), name="auto_activation"))
     _background_tasks.append(asyncio.create_task(_mongo_reconcile_loop(), name="mongo_reconcile"))
     _background_tasks.append(asyncio.create_task(_chain_prewarm_once(), name="chain_prewarm"))
     _background_tasks.append(asyncio.create_task(asyncio.to_thread(legacy_api.legacy_startup), name="legacy_startup"))
