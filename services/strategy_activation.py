@@ -310,11 +310,11 @@ async def activate_strategy(
     if broker_scope_id and broker_scope_id not in router.brokers:
         try:
             settings_doc = await asyncio.to_thread(broker_scope.load_broker_settings, mongo, user_id, broker_scope_id, activation_mode)
-            closed_mtm = await asyncio.to_thread(broker_scope.closed_day_mtm, mongo, broker_scope_id)
+            closed = await asyncio.to_thread(broker_scope.closed_day_strategies, mongo, broker_scope_id)
         except Exception:
             log.exception("[Activation] broker settings load failed broker=%s", broker_scope_id)
-            settings_doc, closed_mtm = None, 0.0
-        broker_scope.ensure_broker_runtime(router, broker_scope_id, user_id, settings_doc, closed_mtm, activation_mode)
+            settings_doc, closed = None, None
+        broker_scope.ensure_broker_runtime(router, broker_scope_id, user_id, settings_doc, closed, activation_mode)
     broker = router.brokers.get(broker_scope_id)
     if broker is not None and broker.status != "ACTIVE":
         _trace("", "activate_rejected", source_strategy_id=_source_id, reason="broker_not_active", broker_scope_id=broker_scope_id, broker_status=broker.status)

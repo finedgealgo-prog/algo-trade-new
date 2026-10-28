@@ -100,6 +100,15 @@ async def ws_update(websocket: WebSocket) -> None:
         return
     client_id = uuid.uuid4().hex
     update_hub.register(client_id, websocket, user_id)
+    # Current LTP of every open token right away (fresh page load or a
+    # reconnect) — ltp_update otherwise only carries tokens that tick after
+    # this socket connected.
+    from main import token_router
+    from api.live_broadcast import open_token_ltp_items
+
+    items = open_token_ltp_items(token_router)
+    if items:
+        update_hub.send_to_client(client_id, {"type": "ltp_update", "data": {"ltp": items}})
     try:
         while True:
             # This socket is server -> client only, but we still read to
@@ -150,6 +159,12 @@ async def ws_execute_orders(websocket: WebSocket, activation_mode: str = Query(d
     # that matches zero real documents and silently returns nothing.
     real_user_id = "" if user_id == "anonymous" else user_id
     legacy_records = load_legacy_execute_order_records(mongo, normalized_mode, real_user_id)
+    # Mongo's copy is up to one checkpoint old — overlay the engine's live price.
+    for rec in legacy_records:
+        for leg in rec.get("legs") or []:
+            live_leg = token_router.legs.get(str(leg.get("leg_id") or ""))
+            if live_leg is not None and live_leg.current_price and not leg.get("exit_trade"):
+                leg["ltp"] = leg["last_saw_price"] = live_leg.current_price
     trade_date = _today_ist_date()
     subscribed_group_id = ""
     if legacy_records:

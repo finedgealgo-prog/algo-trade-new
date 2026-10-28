@@ -521,7 +521,7 @@ def test_startup_rebuilds_broker_config_from_saved_settings(monkeypatch):
     saved = {"StopLoss": 40, "Target": 90, "status": 1,
              "LockAndTrail": {"InstrumentMove": 100, "StopLossMove": 70}, "OverallTrailSL": {"InstrumentMove": 10, "StopLossMove": 1}}
     monkeypatch.setattr(broker_scope, "load_broker_settings", lambda *a: saved)
-    monkeypatch.setattr(broker_scope, "closed_day_mtm", lambda *a: 65.0)
+    monkeypatch.setattr(broker_scope, "closed_day_strategies", lambda *a: {"old": (broker_scope._current_trading_days()[-1], 65.0)})
     broker_scope.rebase_day_mtm(router, None)
     assert stale.config.trailing_mode == TrailingMode.LOCK_AND_TRAIL
     assert stale.config.target_enabled is False
@@ -630,3 +630,59 @@ def test_no_slippage_by_default_and_recovered_legs_not_slipped_twice():
     leg = LegRuntime(leg_id="P", strategy_id="s2", user_id="u1", token="2", is_sell=True, option_type="CE", qty=1, entry_price=100.0, current_price=100.0)
     router.register_leg(leg)
     assert leg.entry_price == 100.0
+
+
+# ── broker SL / Target / Lock&Trail act on the broker's OVERALL day MTM ─────
+
+def _broker_with_closed_loss(settings, closed_mtm):
+    """Running strategy s1 (one short BTC option, MTM 0) plus a strategy
+    already squared off today under the same broker with `closed_mtm`."""
+    router, engine, strategy, leg = _running_strategy_without_broker()
+    today = broker_scope._current_trading_days()[-1]
+    strategy.activated_date = today
+    broker = broker_scope.apply_live_settings(router, "bconf1", "u1", {**settings, "status": 1},
+                                              closed={"s0": (today, closed_mtm)})
+    return router, broker, leg
+
+
+def test_broker_sl_counts_strategies_already_squared_off():
+    router, broker, leg = _broker_with_closed_loss({"StopLoss": 3600}, -3550.0)
+    assert broker.mtm == pytest.approx(-3550.0)  # card's Total MTM
+    router.on_tick(TickUpdate(changed_ltp={BTC_OPTION: 540.0}))  # running -34 -> day -3584
+    assert leg.status == "ACTIVE"
+    router.on_tick(TickUpdate(changed_ltp={BTC_OPTION: 600.0}))  # running -85 -> day -3635
+    assert leg.status == "EXITED" and broker.status == "EXIT_PENDING"
+
+
+def test_broker_target_counts_strategies_already_squared_off():
+    router, broker, leg = _broker_with_closed_loss({"Target": 1050}, 1000.0)
+    router.on_tick(TickUpdate(changed_ltp={BTC_OPTION: 400.0}))  # running +85 -> day 1085
+    assert leg.status == "EXITED" and broker.status == "EXIT_PENDING"
+
+
+def test_broker_lock_and_trail_counts_strategies_already_squared_off(monkeypatch):
+    import risk.evaluator as evaluator
+    now = [0.0]
+    monkeypatch.setattr(evaluator, "clock", lambda: now[0])
+    router, broker, leg = _broker_with_closed_loss(
+        {"LockAndTrail": {"InstrumentMove": 1050, "StopLossMove": 1020}, "OverallTrailSL": {"InstrumentMove": 10, "StopLossMove": 5}}, 1000.0)
+    for t, price in ((2.0, 400.0), (4.0, 400.0)):  # day 1085 held -> lock on, floor 1020 + 3*5
+        now[0] = t
+        router.on_tick(TickUpdate(changed_ltp={BTC_OPTION: price}))
+    assert broker.trailing_activated and broker.current_floor == pytest.approx(1035.0)
+    now[0] = 5.0
+    router.on_tick(TickUpdate(changed_ltp={BTC_OPTION: 460.0}))  # running +34 -> day 1034 <= floor
+    assert leg.status == "EXITED" and broker.status == "EXIT_PENDING"
+
+
+def test_squared_off_strategy_keeps_counting_toward_broker_day_mtm():
+    router, broker, _leg = _broker_with_closed_loss({"StopLoss": 3600}, 0.0)
+    loser = StrategyRuntime(strategy_id="s9", user_id="u1", strategy_cfg={"Ticker": "BTCUSD"}, broker_scope_id="bconf1")
+    loser.activated_date = broker_scope._current_trading_days()[-1]
+    loser.mtm = -3590.0
+    router.register_strategy(loser)
+    assert router.finalize_if_no_open_legs("s9")
+    assert broker.closed_strategies["s9"][1] == -3590.0
+    from risk.broker_risk import risk_mtm
+    assert risk_mtm(router, "bconf1") == pytest.approx(-3590.0)
+    assert risk_mtm(router, "other") == 0.0

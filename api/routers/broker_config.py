@@ -278,10 +278,10 @@ async def save_legacy_broker_stoploss_settings(payload: dict) -> dict:
     # under this broker pick up the new SL/Target/Lock/Trail on their next
     # tick (see services/broker_scope.apply_live_settings).
     for candidate_scope_id in {broker, f"{user_id}:{broker}"}:
-        closed_mtm = 0.0
+        closed = None
         if candidate_scope_id not in token_router.brokers:
-            closed_mtm = await asyncio.to_thread(broker_scope.closed_day_mtm, mongo, candidate_scope_id)
-        broker_scope.apply_live_settings(token_router, candidate_scope_id, user_id, document, closed_mtm, activation_mode)
+            closed = await asyncio.to_thread(broker_scope.closed_day_strategies, mongo, candidate_scope_id)
+        broker_scope.apply_live_settings(token_router, candidate_scope_id, user_id, document, closed, activation_mode)
 
     # ws_live.py only ever sends "broker-settings" once, on the socket's
     # own initial connect (load_legacy_broker_settings there) — a save made

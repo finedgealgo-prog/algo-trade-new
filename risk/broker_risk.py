@@ -115,15 +115,27 @@ def risk_state(broker: BrokerRuntime) -> dict:
 
 
 def running_mtm(router, broker_scope_id: str) -> float:
-    """The MTM broker-level SL/Target/Lock/Trail act on: the combined MTM of
-    the strategies RUNNING under this broker right now. Strategies already
-    squared off earlier today don't count (their losses made a fresh SL fire
-    instantly), and profit already on the running positions counts the
-    moment settings are saved (a Lock set at +200 locks immediately)."""
+    """Combined MTM of the strategies RUNNING under this broker right now
+    (squared-off ones excluded) — used to rebuild the day total at startup."""
     return sum(
         s.mtm for s in router.strategies.values()
         if s.broker_scope_id == broker_scope_id and s.status != "EXITED"
     )
+
+
+def risk_mtm(router, broker_scope_id: str) -> float:
+    """The MTM broker-level SL/Target/Lock/Trail act on: the broker's OVERALL
+    day MTM (strategies squared off earlier today + running ones) — the same
+    Total MTM the broker card shows. A broker SL of 3600 fires once the
+    broker's day loss reaches 3600, not just the still-running strategies'."""
+    running = running_mtm(router, broker_scope_id)
+    broker = router.brokers.get(broker_scope_id)
+    if broker is None or not broker.closed_strategies:
+        return running
+    from services.broker_scope import _current_trading_days
+
+    days = set(_current_trading_days())
+    return running + sum(mtm for day, mtm in broker.closed_strategies.values() if day in days)
 
 
 # Per-broker peak confirmation windows (in-memory only; not checkpointed —
@@ -141,8 +153,8 @@ def reset_peak_window(broker_scope_id: str, seed: float | None = None) -> None:
 
 
 def evaluate_broker_risk(broker: BrokerRuntime, risk_mtm: float | None = None) -> EvalResult:
-    """risk_mtm: running strategies' MTM (running_mtm); defaults to
-    broker.mtm for callers without a router. peak_pnl is in the same terms."""
+    """risk_mtm: the broker's overall day MTM (see risk_mtm); defaults to
+    broker.mtm. peak_pnl is in the same terms."""
     mtm = broker.mtm if risk_mtm is None else risk_mtm
     window = _PEAK_WINDOWS.setdefault(broker.broker_scope_id, PeakWindow())
     result = evaluate_risk(mtm, broker.config, broker.peak_pnl, broker.current_floor, broker.trailing_activated,

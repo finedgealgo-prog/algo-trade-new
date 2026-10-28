@@ -99,7 +99,12 @@ def _leg_to_wire(leg: LegRuntime, underlying: str = "") -> dict[str, Any]:
         "_runtime_entry_ts": leg.entry_ts,
         "_runtime_exit_ts": leg.exit_ts,
     }
-    if not is_open:
+    if is_open:
+        # Live price on the record itself — the page's LTP column otherwise
+        # shows the entry price until this token's next ltp_update tick.
+        doc["ltp"] = leg.current_price
+        doc["last_saw_price"] = leg.current_price
+    else:
         doc["exit_trade"] = {"price": leg.current_price, "exit_reason": "sl" if leg.status == "SL_HIT" else "target" if leg.status == "TP_HIT" else "", "traded_timestamp": leg.exit_ts}
     return doc
 
@@ -417,6 +422,7 @@ def broker_to_doc(broker: BrokerRuntime) -> dict[str, Any]:
     from dataclasses import asdict
     doc = asdict(broker)
     doc["_id"] = doc.pop("broker_scope_id")
+    doc.pop("closed_strategies", None)  # rebuilt from algo_trades at startup
     doc["strategy_ids"] = sorted(broker.strategy_ids)
     doc["leg_ids"] = sorted(broker.leg_ids)
     doc["config"]["trailing_mode"] = broker.config.trailing_mode.value
@@ -764,6 +770,7 @@ def doc_to_broker_kwargs(doc: dict[str, Any]) -> dict[str, Any]:
     doc = dict(doc)
     doc["broker_scope_id"] = doc.pop("_id")
     doc["cycle_base_mtm"] = 0.0  # unused; peak is re-derived by rebase_day_mtm
+    doc.pop("closed_strategies", None)
     doc["strategy_ids"] = set(doc.get("strategy_ids") or [])
     doc["leg_ids"] = set(doc.get("leg_ids") or [])
     config_doc = dict(doc.get("config") or {})

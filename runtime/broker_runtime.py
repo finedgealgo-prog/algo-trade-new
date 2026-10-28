@@ -36,15 +36,20 @@ class BrokerRuntime:
     leg_ids: set[str] = field(default_factory=set)
 
     realized_pnl: float = 0.0  # closed-trade PnL for the day
+    # Strategies squared off under this broker: strategy_id -> (activated
+    # trading day, final MTM). risk.broker_risk.risk_mtm adds the ones from
+    # the current trading day to the running strategies' MTM. Not
+    # checkpointed — rebuilt from algo_trades at startup (rebase_day_mtm).
+    closed_strategies: dict[str, tuple[str, float]] = field(default_factory=dict)
     mtm: float = 0.0  # day net = realized_pnl + open (unrealized) pnl
 
     peak_pnl: float = 0.0
     current_floor: float = 0.0
     trailing_activated: bool = False
 
-    # Unused (always 0) — kept so existing checkpoints load. Broker risk now
-    # acts on the running strategies' MTM (risk.broker_risk.running_mtm);
-    # peak_pnl/current_floor are in those terms. `mtm` stays the day total.
+    # Unused (always 0) — kept so existing checkpoints load. Broker risk acts
+    # on `mtm`, the day total (risk.broker_risk.risk_mtm); peak_pnl and
+    # current_floor are in those terms.
     cycle_base_mtm: float = 0.0
 
     # ACTIVE -> EXIT_PENDING (SL/Target hit, legs exiting) -> ACTIVE again

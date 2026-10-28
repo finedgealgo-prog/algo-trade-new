@@ -295,6 +295,9 @@ class TokenRouter:
             broker = self.brokers.get(strategy.broker_scope_id)
             if broker:
                 broker.strategy_ids.discard(strategy_id)
+                # Its loss/profit still counts toward the broker's day MTM
+                # (broker SL/Target/Lock/Trail act on the overall MTM).
+                broker.closed_strategies[strategy_id] = (strategy.activated_date, strategy.mtm)
         return True
 
     def force_remove_strategy(self, strategy_id: str) -> bool:
@@ -611,7 +614,8 @@ class TokenRouter:
             if broker is None or broker.status != "ACTIVE":
                 continue
             before = broker_risk.risk_state(broker)
-            risk_mtm = broker_risk.running_mtm(self, broker_id)
+            risk_mtm = broker_risk.risk_mtm(self, broker_id)
+            broker.mtm = risk_mtm  # day total as the card shows it
             result = broker_risk.evaluate_broker_risk(broker, risk_mtm)
             after = broker_risk.risk_state(broker)
             # Persist + push only on a real lock/trail/SL change — not on every
@@ -625,7 +629,7 @@ class TokenRouter:
                 # Audit trail for every lock/trail transition and every hit.
                 cfg = broker.config
                 log.info(
-                    "[BrokerRisk] broker=%s running_mtm=%.2f peak=%.2f lock=%s floor=%.2f decision=%s | cfg sl=%s tgt=%s mode=%s reach=%s lock=%s every=%s trail=%s",
+                    "[BrokerRisk] broker=%s day_mtm=%.2f peak=%.2f lock=%s floor=%.2f decision=%s | cfg sl=%s tgt=%s mode=%s reach=%s lock=%s every=%s trail=%s",
                     broker_id, risk_mtm, after["lock_peak_mtm"], after["lock_activated"], after["current_lock_floor"],
                     result.decision.value, cfg.stop_loss_amount, cfg.target_amount, cfg.trailing_mode.value,
                     cfg.activation_profit, cfg.lock_profit, cfg.profit_step, cfg.trail_by,

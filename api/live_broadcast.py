@@ -27,7 +27,7 @@ from persistence.serializers import load_legacy_open_leg_tokens, strategy_to_doc
 from shared.config.settings import get_settings
 from shared.db.mongo import get_mongo
 from shared.logging.logger import get_logger
-from shared.market.ltp_cache import TickUpdate
+from shared.market.ltp_cache import TickUpdate, get_ltp_cache
 from token_router import TokenRouter
 
 log = get_logger(__name__)
@@ -117,6 +117,18 @@ async def broadcast_strategy_snapshots(router: TokenRouter, strategy_ids: Iterab
         if not owner_user_id:
             continue
         await execute_orders_hub.send_to_user(owner_user_id, {"data": {"records": records}})
+
+
+def open_token_ltp_items(router: TokenRouter) -> list[dict]:
+    """Latest LTP of every token an open position holds — the snapshot a
+    freshly connected `/ws/update` client gets before live ticks."""
+    cache = get_ltp_cache()
+    items = []
+    for token in set(router.token_to_legs) | _legacy_open_tokens_cache:
+        price = cache.get_ltp(token)
+        if price:
+            items.append({"token": token, "ltp": price})
+    return items
 
 
 async def broadcast_tick_update(router: TokenRouter, update: TickUpdate) -> None:

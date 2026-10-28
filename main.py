@@ -56,6 +56,7 @@ from api.routers import crypto_straddle as crypto_straddle_router
 from api.routers import straddle_alert as straddle_alert_router
 from api.routers import runtime_risk as runtime_risk_router
 from api.routers import auto_activation as auto_activation_router
+from api.routers import stock_history as stock_history_router
 from api.live_broadcast import broadcast_tick_update, refresh_legacy_open_tokens
 from orders.live_executor import LiveOrderExecutor
 from orders.order_engine import OrderEngine
@@ -99,6 +100,7 @@ app.include_router(straddle_alert_router.router)
 app.include_router(straddle_alert_router.monitor_router)
 app.include_router(runtime_risk_router.router)
 app.include_router(auto_activation_router.router)
+app.include_router(stock_history_router.router)
 
 settings = get_settings()
 tick_client = TickClient(settings.websocket_base_url, get_ltp_cache())
@@ -630,6 +632,22 @@ async def _delta_instrument_cache_loop() -> None:
         await asyncio.sleep(_DELTA_INSTRUMENT_CACHE_REFRESH_SECONDS)
 
 
+async def _crypto_stale_price_loop() -> None:
+    """Open Delta option leg with no tick for 10s -> Delta REST mark through
+    the normal tick path (services/crypto_stale_price.py)."""
+    from services import crypto_stale_price
+
+    async def _fetch(symbols):
+        return await asyncio.to_thread(crypto_stale_price.fetch_delta_marks, symbols)
+
+    while True:
+        await asyncio.sleep(crypto_stale_price.POLL_SECONDS)
+        try:
+            await crypto_stale_price.refresh_once(token_router, get_ltp_cache(), tick_client.dispatch, _fetch)
+        except Exception:
+            log.exception("[CryptoStalePrice] loop cycle failed")
+
+
 _IST = timezone(timedelta(hours=5, minutes=30))
 _DAILY_BROKER_RESET_POLL_SECONDS = 60
 
@@ -659,7 +677,9 @@ async def _daily_broker_reset_loop() -> None:
         if today == last_reset_date:
             continue
         last_reset_date = today
+        current_days = set(broker_scope._current_trading_days())
         for broker in token_router.brokers.values():
+            broker.closed_strategies = {sid: v for sid, v in broker.closed_strategies.items() if v[0] in current_days}
             broker.mtm = 0.0
             broker.cycle_base_mtm = 0.0
             broker.realized_pnl = 0.0
@@ -783,6 +803,28 @@ async def _auto_activation_loop() -> None:
             log.exception("[AutoActivation] loop cycle failed")
 
 
+async def _daily_stock_history_loop() -> None:
+    """Stock + index EOD candles for today, every trading day at 16:00 IST
+    (services/stock_history_sync.py — copied from algo.scanner's
+    /scanner/sync_historical_data). Sleeps to the next run time, so a restart
+    after 16:00 waits for tomorrow; /scanner/sync_historical_data covers a
+    missed day by hand."""
+    from services import stock_history_sync
+
+    while True:
+        now = datetime.now(_IST)
+        target = datetime.combine(now.date(), stock_history_sync.RUN_AT_IST, tzinfo=_IST)
+        if target <= now:
+            target += timedelta(days=1)
+        await asyncio.sleep(max(1.0, (target - datetime.now(_IST)).total_seconds()))
+        try:
+            result = await asyncio.to_thread(stock_history_sync.run_today)
+            log.info("[StockHistorySync] daily run: %s", {k: v for k, v in result.items() if k != "skipped"})
+        except Exception:
+            log.exception("[StockHistorySync] daily run failed")
+        await asyncio.sleep(60)
+
+
 async def _crypto_expiry_square_off_loop() -> None:
     """A Delta option leg still open at its contract's expiry (17:30 IST)
     would otherwise sit ACTIVE with a frozen last mark — the contract stops
@@ -900,6 +942,8 @@ async def on_startup() -> None:
     _background_tasks.append(asyncio.create_task(_daily_eod_square_off_loop(), name="daily_eod_square_off"))
     _background_tasks.append(asyncio.create_task(_range_breakout_loop(), name="range_breakout"))
     _background_tasks.append(asyncio.create_task(_crypto_expiry_square_off_loop(), name="crypto_expiry_square_off"))
+    _background_tasks.append(asyncio.create_task(_crypto_stale_price_loop(), name="crypto_stale_price"))
+    _background_tasks.append(asyncio.create_task(_daily_stock_history_loop(), name="daily_stock_history"))
     _background_tasks.append(asyncio.create_task(_auto_activation_loop(), name="auto_activation"))
     _background_tasks.append(asyncio.create_task(_mongo_reconcile_loop(), name="mongo_reconcile"))
     _background_tasks.append(asyncio.create_task(_chain_prewarm_once(), name="chain_prewarm"))

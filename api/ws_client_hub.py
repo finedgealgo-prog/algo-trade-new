@@ -153,6 +153,11 @@ class ClientHub:
             for sender in tuple(self._senders.values()):
                 sender.send(msg)
 
+    def send_to_client(self, client_id: str, payload: dict[str, Any]) -> None:
+        sender = self._senders.get(client_id)
+        if sender is not None:
+            sender.send(json.dumps(payload))
+
     async def send_to_user(self, user_id: str, payload: dict[str, Any]) -> None:
         if not user_id:
             return

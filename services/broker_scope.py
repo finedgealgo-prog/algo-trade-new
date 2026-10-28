@@ -19,7 +19,7 @@ from typing import Any
 
 from persistence.checkpoint import get_checkpoint_writer
 from persistence.serializers import _today_ist_date, broker_to_doc, load_legacy_broker_settings
-from risk.broker_risk import build_broker_risk_config, evaluate_broker_risk, reset_peak_window, risk_state, running_mtm, settings_active
+from risk.broker_risk import build_broker_risk_config, evaluate_broker_risk, reset_peak_window, risk_mtm, risk_state, running_mtm, settings_active
 from risk.models import RiskConfig
 from runtime.broker_runtime import BrokerRuntime
 from shared.db.mongo import Mongo
@@ -53,18 +53,19 @@ def _current_trading_days() -> list[str]:
     return sorted({_today_ist_date(), trading_day(True)})
 
 
-def closed_day_mtm(mongo: Mongo, broker_scope_id: str) -> float:
-    """Blocking — P&L of this broker's strategies already squared off today
-    (algo-2_0's final algo_trades snapshots). Added to the running
-    strategies' MTM it gives the broker's day total."""
-    total = 0.0
+def closed_day_strategies(mongo: Mongo, broker_scope_id: str) -> dict[str, tuple[str, float]]:
+    """Blocking — this broker's strategies already squared off today
+    (algo-2_0's final algo_trades snapshots): strategy_id -> (activated
+    trading day, final MTM). Added to the running strategies' MTM they give
+    the broker's day total (risk.broker_risk.risk_mtm)."""
+    closed: dict[str, tuple[str, float]] = {}
     for doc in mongo.raw["algo_trades"].find(
         {"engine": "algo-2_0", "broker": broker_scope_id, "_runtime_status": "EXITED",
          "_runtime_activated_date": {"$in": _current_trading_days()}},
-        {"_runtime_mtm": 1},
+        {"_runtime_mtm": 1, "_runtime_activated_date": 1},
     ):
-        total += float(doc.get("_runtime_mtm") or 0.0)
-    return total
+        closed[str(doc["_id"])] = (doc.get("_runtime_activated_date") or "", float(doc.get("_runtime_mtm") or 0.0))
+    return closed
 
 
 def rebase_day_mtm(router: TokenRouter, mongo: Mongo) -> None:
@@ -81,18 +82,18 @@ def rebase_day_mtm(router: TokenRouter, mongo: Mongo) -> None:
             log.exception("[BrokerScope] settings reload failed broker=%s", broker.broker_scope_id)
             settings_doc = None
         broker.config = build_broker_risk_config(settings_doc or {}) if settings_active(settings_doc) else RiskConfig()
-        running = running_mtm(router, broker.broker_scope_id)
-        broker.mtm = closed_day_mtm(mongo, broker.broker_scope_id) + running
+        broker.closed_strategies = closed_day_strategies(mongo, broker.broker_scope_id)
+        broker.mtm = risk_mtm(router, broker.broker_scope_id)
         broker.cycle_base_mtm = 0.0
-        # Risk peak is in running-MTM terms; an active lock keeps its peak.
-        broker.peak_pnl = max(broker.peak_pnl, running) if broker.trailing_activated else running
+        # Risk peak is in day-MTM terms; an active lock keeps its peak.
+        broker.peak_pnl = max(broker.peak_pnl, broker.mtm) if broker.trailing_activated else broker.mtm
         if settings_active(settings_doc):
             # The checkpoint can predate a lock that activated just before a
             # crash; the settings doc is written on every lock change.
             _seed_lock_state(broker, settings_doc or {})
 
 
-def ensure_broker_runtime(router: TokenRouter, broker_scope_id: str, user_id: str, settings_doc: dict[str, Any] | None, closed_mtm: float = 0.0, activation_mode: str = ACTIVATION_MODE) -> BrokerRuntime | None:
+def ensure_broker_runtime(router: TokenRouter, broker_scope_id: str, user_id: str, settings_doc: dict[str, Any] | None, closed: dict[str, tuple[str, float]] | None = None, activation_mode: str = ACTIVATION_MODE) -> BrokerRuntime | None:
     """Registers a BrokerRuntime for `broker_scope_id` if none is live yet,
     configured from `settings_doc` (see load_broker_settings). An already
     registered broker is returned untouched — its day MTM, lock state and
@@ -102,16 +103,17 @@ def ensure_broker_runtime(router: TokenRouter, broker_scope_id: str, user_id: st
     broker = router.brokers.get(broker_scope_id)
     if broker is not None:
         return broker
-    broker = BrokerRuntime(broker_scope_id=broker_scope_id, user_id=user_id, mtm=closed_mtm, peak_pnl=closed_mtm, activation_mode=activation_mode)
+    broker = BrokerRuntime(broker_scope_id=broker_scope_id, user_id=user_id, closed_strategies=dict(closed or {}), activation_mode=activation_mode)
     if settings_active(settings_doc):
         broker.config = build_broker_risk_config(settings_doc or {})
     router.register_broker(broker)
     _attach_running_positions(router, broker)
-    # Risk acts on the running strategies' MTM (risk.broker_risk.running_mtm);
+    # Risk acts on the broker's overall day MTM (risk.broker_risk.risk_mtm);
     # the peak starts there — never at 0 against a loss, which read as a huge
     # profit and fired the Lock instantly.
+    broker.mtm = risk_mtm(router, broker_scope_id)
     broker.cycle_base_mtm = 0.0
-    broker.peak_pnl = running_mtm(router, broker_scope_id)
+    broker.peak_pnl = broker.mtm
     reset_peak_window(broker_scope_id, broker.peak_pnl)
     if settings_active(settings_doc):
         _seed_lock_state(broker, settings_doc or {})
@@ -213,7 +215,7 @@ def reset_after_risk_exit(broker: BrokerRuntime, mongo: Mongo | None = None) -> 
     # every strategy run under it today — the same figure FastForward2's
     # Total MTM shows — not a counter restarted after each broker exit.
     broker.config = RiskConfig()
-    broker.peak_pnl = 0.0  # everything under it is squared off: running MTM is 0
+    broker.peak_pnl = broker.mtm  # fresh lock/trail cycle from the day total now
     broker.cycle_base_mtm = 0.0
     reset_peak_window(broker.broker_scope_id)
     broker.current_floor = 0.0
@@ -253,7 +255,7 @@ def _attach_running_positions(router: TokenRouter, broker: BrokerRuntime) -> Non
                 broker.leg_ids.add(leg_id)
 
 
-def apply_live_settings(router: TokenRouter, broker_scope_id: str, user_id: str, settings_doc: dict[str, Any], closed_mtm: float = 0.0, activation_mode: str = ACTIVATION_MODE) -> BrokerRuntime | None:
+def apply_live_settings(router: TokenRouter, broker_scope_id: str, user_id: str, settings_doc: dict[str, Any], closed: dict[str, tuple[str, float]] | None = None, activation_mode: str = ACTIVATION_MODE) -> BrokerRuntime | None:
     """Applies a broker SL/Target/Lock/Trail save to the LIVE engine, so it
     takes effect on already-running strategies from the very next tick:
 
@@ -268,7 +270,7 @@ def apply_live_settings(router: TokenRouter, broker_scope_id: str, user_id: str,
     if broker is None:
         if not any(s.broker_scope_id == broker_scope_id and s.status != "EXITED" for s in router.strategies.values()):
             return None
-        return ensure_broker_runtime(router, broker_scope_id, user_id, settings_doc, closed_mtm, activation_mode)
+        return ensure_broker_runtime(router, broker_scope_id, user_id, settings_doc, closed, activation_mode)
     if broker.activation_mode != activation_mode:
         # Settings saved for this broker under the other page's mode — not
         # the ones this running broker evaluates.
@@ -282,10 +284,11 @@ def apply_live_settings(router: TokenRouter, broker_scope_id: str, user_id: str,
         # and instantly square off a freshly added strategy.
         broker.current_floor = 0.0
         broker.trailing_activated = False
-        # Evaluated on the running strategies' MTM right now — profit already
+        # Evaluated on the broker's overall day MTM right now — profit already
         # made counts immediately (Lock 60->40 every 5->+2 saved at +200 locks
         # 96 at once, not after the next +60).
-        current = running_mtm(router, broker_scope_id)
+        current = risk_mtm(router, broker_scope_id)
+        broker.mtm = current
         broker.peak_pnl = current
         broker.cycle_base_mtm = 0.0
         reset_peak_window(broker_scope_id, current)
