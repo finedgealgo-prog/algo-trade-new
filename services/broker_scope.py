@@ -255,6 +255,25 @@ def _attach_running_positions(router: TokenRouter, broker: BrokerRuntime) -> Non
                 broker.leg_ids.add(leg_id)
 
 
+def breached_settings_error(day_mtm: float, settings_doc: dict[str, Any]) -> str | None:
+    """Broker SL/Target act on the overall day MTM, so a StopLoss at or under
+    the loss already made (or a Target at or under the profit already made)
+    would square everything off the moment it is saved. Returns the reason
+    such a save is refused, None when it is fine."""
+    try:
+        sl = float(settings_doc.get("StopLoss") or 0)
+        tgt = float(settings_doc.get("Target") or 0)
+    except (TypeError, ValueError):
+        return None
+    if sl > 0 and day_mtm <= -sl:
+        return (f"Overall MTM is already {day_mtm:,.2f}. Stop Loss {sl:,.2f} has already been crossed — "
+                f"it would square off every position right away. Set a Stop Loss above {abs(day_mtm):,.2f}.")
+    if tgt > 0 and day_mtm >= tgt:
+        return (f"Overall MTM is already {day_mtm:,.2f}. Target {tgt:,.2f} has already been reached — "
+                f"it would square off every position right away. Set a Target above {day_mtm:,.2f}.")
+    return None
+
+
 def apply_live_settings(router: TokenRouter, broker_scope_id: str, user_id: str, settings_doc: dict[str, Any], closed: dict[str, tuple[str, float]] | None = None, activation_mode: str = ACTIVATION_MODE) -> BrokerRuntime | None:
     """Applies a broker SL/Target/Lock/Trail save to the LIVE engine, so it
     takes effect on already-running strategies from the very next tick:

@@ -686,3 +686,29 @@ def test_squared_off_strategy_keeps_counting_toward_broker_day_mtm():
     from risk.broker_risk import risk_mtm
     assert risk_mtm(router, "bconf1") == pytest.approx(-3590.0)
     assert risk_mtm(router, "other") == 0.0
+
+
+def test_saving_a_stop_loss_already_crossed_by_overall_mtm_is_refused():
+    err = broker_scope.breached_settings_error
+    assert "above 7,645.60" in err(-7645.60, {"StopLoss": 4900})
+    assert err(-7645.60, {"StopLoss": 7645.60}) is not None  # touching it is a hit too
+    assert err(-7645.60, {"StopLoss": 8000}) is None
+    assert err(-7645.60, {"StopLoss": None, "Target": None}) is None  # clearing is fine
+    assert "Target" in err(1200.0, {"Target": 1000})
+    assert err(1200.0, {"Target": 1500, "StopLoss": 500}) is None
+
+
+def test_save_route_refuses_breached_stop_loss_and_keeps_settings(monkeypatch):
+    import main
+    from api.routers import broker_config
+    from fastapi import HTTPException
+    router, broker, leg = _broker_with_closed_loss({}, -7645.60)
+    monkeypatch.setattr(main, "token_router", router)
+    writes = []
+    fake_db = {"algo_borker_stoploss_settings": SimpleNamespace(update_one=lambda *a, **k: writes.append(a))}
+    monkeypatch.setattr(broker_config, "get_mongo", lambda: SimpleNamespace(raw=fake_db))
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(broker_config.save_legacy_broker_stoploss_settings(
+            {"user_id": "u1", "broker": "bconf1", "activation_mode": "fast-forward", "StopLoss": 4900}))
+    assert exc.value.status_code == 400 and "7,645.60" in exc.value.detail
+    assert writes == [] and leg.status == "ACTIVE" and broker.config.stop_loss_enabled is False

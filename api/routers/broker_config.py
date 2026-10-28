@@ -32,6 +32,7 @@ from features.broker_accounts import DEFAULT_APP_USER_ID
 from api.ws_client_hub import execute_orders_hub
 from persistence.checkpoint import get_checkpoint_writer
 from persistence.serializers import broker_to_doc, load_legacy_broker_settings
+from risk.broker_risk import risk_mtm, running_mtm
 from services import broker_scope
 from runtime.broker_runtime import BrokerRuntime
 from shared.auth.dependency import get_current_user
@@ -251,6 +252,22 @@ async def save_legacy_broker_stoploss_settings(payload: dict) -> dict:
     broker = str(payload.get("broker") or "").strip()
     activation_mode = str(payload.get("activation_mode") or "algo-backtest").strip() or "algo-backtest"
 
+    from main import token_router
+
+    # Refuse a StopLoss/Target the broker's overall day MTM has already
+    # crossed — saving it would square everything off instantly.
+    day_mtm = None
+    for candidate_scope_id in (broker, f"{user_id}:{broker}"):
+        if candidate_scope_id in token_router.brokers:
+            day_mtm = risk_mtm(token_router, candidate_scope_id)
+            break
+    if day_mtm is None and broker:
+        closed = await asyncio.to_thread(broker_scope.closed_day_strategies, mongo, broker)
+        day_mtm = running_mtm(token_router, broker) + sum(m for _d, m in closed.values())
+    error = broker_scope.breached_settings_error(day_mtm or 0.0, payload)
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+
     document = {
         "user_id": user_id,
         "broker": broker,
@@ -271,8 +288,6 @@ async def save_legacy_broker_stoploss_settings(payload: dict) -> dict:
             {"$set": document, "$setOnInsert": {"creation_ts": datetime.now(timezone.utc).isoformat()}},
             upsert=True,
         )
-
-    from main import token_router
 
     # Applies to the LIVE engine immediately — strategies already running
     # under this broker pick up the new SL/Target/Lock/Trail on their next
