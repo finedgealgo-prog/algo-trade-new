@@ -161,3 +161,15 @@ class StrategyRuntime:
     # or recovered from a checkpoint written before this field existed, "" —
     # keeps showing on /fast-forward_2 as if still live).
     activated_date: str = ""
+
+    # Set when a live entry was rejected for insufficient margin and the
+    # whole strategy was squared off because of it — {leg_id, reason,
+    # message, at}, shown on AlgoTrade2's card. Non-margin rejections live
+    # on the leg (LegRuntime.entry_error) instead, since they can be resumed.
+    entry_error: dict[str, Any] = field(default_factory=dict)
+
+    # Legs that had already closed when this strategy was recovered after a
+    # restart — not registered in the router (nothing to evaluate), but kept
+    # in its record so their realized P&L stays on the page (the page sums
+    # the record's legs; without them it lost those legs' loss).
+    closed_legs: dict[str, Any] = field(default_factory=dict)

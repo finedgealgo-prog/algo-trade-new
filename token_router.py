@@ -45,7 +45,7 @@ from orders.slippage import slipped_price
 from risk.models import RiskDecision
 from runtime.broker_runtime import BrokerRuntime
 from runtime.lazy_runtime import LazyRuntime
-from runtime.leg_runtime import LegRuntime
+from runtime.leg_runtime import ENTRY_FAILED, LegRuntime
 from runtime.pending_entry_runtime import PendingEntryRuntime
 from runtime.range_watcher_runtime import RangeWatcherRuntime
 from runtime.recost_runtime import RecostRuntime
@@ -252,6 +252,13 @@ class TokenRouter:
             return False
         if any(p.strategy_id == strategy_id for p in self.pending_entries.values()):
             return False
+        if strategy.status != "ACTIVE":
+            # Strategy is exiting: a rejected entry waiting for Resume
+            # (no position) will never be placed now.
+            for lid in strategy.leg_ids:
+                leg = self.legs.get(lid)
+                if leg is not None and leg.status == ENTRY_FAILED:
+                    leg.status = "EXITED"
         has_open_leg = any(
             lid in self.legs and self.legs[lid].status not in _TERMINAL_LEG_STATUSES
             for lid in strategy.leg_ids

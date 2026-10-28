@@ -86,9 +86,16 @@ def archive_strategies(payload: ArchiveRequest, user: dict = Depends(get_current
         query: dict[str, Any] = {"_id": {"$in": archivable}, "active_on_server": {"$ne": True}}
         if user.get("_id"):
             query["user_id"] = str(user["_id"])
-        archived = get_mongo().raw["algo_trades"].update_many(
+        collection = get_mongo().raw["algo_trades"]
+        archived = collection.update_many(
             query, {"$set": {"archived": True, "archived_at": datetime.now(timezone.utc).isoformat()}},
         ).modified_count
+        # An archived strategy no longer counts toward its broker's MTM
+        # (broker SL/Target/Lock/Trail act on what the page shows).
+        gone = {str(d["_id"]) for d in collection.find({**query, "archived": True}, {"_id": 1})}
+        for broker in token_router.brokers.values():
+            for sid in gone & broker.closed_strategies.keys():
+                broker.closed_strategies.pop(sid, None)
     log.info("[archive] user=%s archived=%d skipped_running=%s", user.get("_id"), archived, running)
     return {"success": True, "archived": archived, "skipped_running": running}
 

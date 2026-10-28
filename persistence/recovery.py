@@ -147,6 +147,7 @@ def recover(router: TokenRouter, mongo: Mongo) -> dict[str, int]:
         recost_parent_ids = {str(w.get("parent_leg_id") or "") for w in recost_docs}
         for leg in docs_to_legs(doc, mongo):
             if leg.status in _TERMINAL_LEG_STATUSES and leg.leg_id not in recost_parent_ids:
+                strategy.closed_legs[leg.leg_id] = leg  # stays in the record (realized P&L)
                 continue
             router.register_leg(leg)
             # Re-derive this leg's pnl with its (just-set) pnl_multiplier and

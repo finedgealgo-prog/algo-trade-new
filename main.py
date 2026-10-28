@@ -193,6 +193,27 @@ def _on_live_order_change(strategy_id: str) -> None:
 
 
 live_executor.on_strategy_changed = _on_live_order_change
+
+
+def _on_live_margin_rejected(strategy_id: str, leg_id: str, error: str) -> None:
+    """A live entry was rejected for insufficient margin: square off the
+    whole strategy (legs already filled are closed on Delta) and keep the
+    reason on it for AlgoTrade2's card."""
+    strategy = token_router.strategies.get(strategy_id)
+    if strategy is None:
+        return
+    leg = token_router.legs.get(leg_id)
+    label = f"{'Sell' if leg.is_sell else 'Buy'} {leg.token}" if leg is not None else leg_id
+    strategy.entry_error = {
+        "leg_id": leg_id, "reason": "MARGIN",
+        "message": f"Insufficient margin for {label} — strategy squared off. {error}".strip(),
+        "at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    log.error("[LiveOrder] margin rejection strategy=%s leg=%s -> squaring off strategy", strategy_id, leg_id)
+    strategy_finalize.square_off_strategy(token_router, order_engine, strategy_id, reason="MARGIN_ERROR")
+
+
+live_executor.on_margin_rejected = _on_live_margin_rejected
 token_router.on_sl_moved = live_executor.sync_stop
 
 

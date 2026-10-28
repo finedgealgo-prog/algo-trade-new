@@ -57,11 +57,12 @@ def closed_day_strategies(mongo: Mongo, broker_scope_id: str) -> dict[str, tuple
     """Blocking — this broker's strategies already squared off today
     (algo-2_0's final algo_trades snapshots): strategy_id -> (activated
     trading day, final MTM). Added to the running strategies' MTM they give
-    the broker's day total (risk.broker_risk.risk_mtm)."""
+    the broker's day total (risk.broker_risk.risk_mtm). Archived ones are
+    left out — once archived (hidden from the page) they no longer count."""
     closed: dict[str, tuple[str, float]] = {}
     for doc in mongo.raw["algo_trades"].find(
         {"engine": "algo-2_0", "broker": broker_scope_id, "_runtime_status": "EXITED",
-         "_runtime_activated_date": {"$in": _current_trading_days()}},
+         "_runtime_activated_date": {"$in": _current_trading_days()}, "archived": {"$ne": True}},
         {"_runtime_mtm": 1, "_runtime_activated_date": 1},
     ):
         closed[str(doc["_id"])] = (doc.get("_runtime_activated_date") or "", float(doc.get("_runtime_mtm") or 0.0))

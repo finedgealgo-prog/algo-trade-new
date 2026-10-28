@@ -125,8 +125,8 @@ def running_mtm(router, broker_scope_id: str) -> float:
 
 def risk_mtm(router, broker_scope_id: str) -> float:
     """The MTM broker-level SL/Target/Lock/Trail act on: the broker's OVERALL
-    day MTM (strategies squared off earlier today + running ones) — the same
-    Total MTM the broker card shows. A broker SL of 3600 fires once the
+    day MTM (strategies squared off earlier today and not archived + running
+    ones) — the same Total MTM the broker card shows. A broker SL of 3600 fires once the
     broker's day loss reaches 3600, not just the still-running strategies'."""
     running = running_mtm(router, broker_scope_id)
     broker = router.brokers.get(broker_scope_id)

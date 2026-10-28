@@ -32,16 +32,19 @@ from bson import ObjectId
 
 from runtime.broker_runtime import BrokerRuntime
 from runtime.lazy_runtime import LazyRuntime
-from runtime.leg_runtime import LegRuntime
+from runtime.leg_runtime import ENTRY_FAILED, LegRuntime
 from runtime.strategy_runtime import StrategyRuntime
 
 ENGINE_TAG = "algo-2_0"
 
 _TERMINAL_LEG_STATUSES = {"SL_HIT", "TP_HIT", "EXITED"}
+# Wire `status` of an ENTRY_FAILED leg (1 = open, 2 = closed).
+ENTRY_FAILED_WIRE_STATUS = 3
 
 
 def _leg_to_wire(leg: LegRuntime, underlying: str = "") -> dict[str, Any]:
-    is_open = leg.status not in _TERMINAL_LEG_STATUSES and leg.status != "EXIT_PENDING"
+    failed = leg.status == ENTRY_FAILED
+    is_open = leg.status not in _TERMINAL_LEG_STATUSES and leg.status != "EXIT_PENDING" and not failed
     doc: dict[str, Any] = {
         "leg_id": leg.leg_id,
         "id": leg.leg_id,
@@ -69,7 +72,8 @@ def _leg_to_wire(leg: LegRuntime, underlying: str = "") -> dict[str, Any]:
         "quantity": leg.qty,
         "lot_size": 1,
         "entry_trade": {"price": leg.entry_price, "strike": leg.strike, "expiry": leg.expiry, "option_type": leg.option_type, "traded_timestamp": leg.entry_ts},
-        "status": 1 if is_open else 2,
+        "status": ENTRY_FAILED_WIRE_STATUS if failed else 1 if is_open else 2,
+        "entry_error": leg.entry_error,
         "feature_status_map": {
             "sl": {"current_sl_price": leg.current_sl_price} if leg.current_sl_price else None,
             "target": {"trigger_price": leg.current_tp_price} if leg.current_tp_price else None,
@@ -98,8 +102,13 @@ def _leg_to_wire(leg: LegRuntime, underlying: str = "") -> dict[str, Any]:
         "_runtime_entry_slippage_applied": leg.entry_slippage_applied,
         "_runtime_entry_ts": leg.entry_ts,
         "_runtime_exit_ts": leg.exit_ts,
+        "_runtime_entry_error": leg.entry_error,
     }
-    if is_open:
+    if failed:
+        # No position was opened — no entry price to compute a P&L from.
+        doc["entry_trade"] = None
+        doc["_runtime_entry_price"] = leg.entry_price
+    elif is_open:
         # Live price on the record itself — the page's LTP column otherwise
         # shows the entry price until this token's next ltp_update tick.
         doc["ltp"] = leg.current_price
@@ -118,7 +127,7 @@ def _wire_to_leg_kwargs(strategy_id: str, doc: dict[str, Any]) -> dict[str, Any]
         "is_sell": doc.get("position") == "Sell",
         "option_type": doc.get("option_type") or "",
         "qty": int(doc.get("_runtime_qty") or doc.get("quantity") or 1),
-        "entry_price": float((doc.get("entry_trade") or {}).get("price") or 0),
+        "entry_price": float((doc.get("entry_trade") or {}).get("price") or doc.get("_runtime_entry_price") or 0),
         "entry_spot": float(doc.get("_runtime_entry_spot") or 0),
         "strike": float(doc.get("strike") or 0),
         "expiry": str(doc.get("expiry_date") or doc.get("expiry") or ""),
@@ -136,6 +145,7 @@ def _wire_to_leg_kwargs(strategy_id: str, doc: dict[str, Any]) -> dict[str, Any]
         "exit_ts": str(doc.get("_runtime_exit_ts") or (doc.get("exit_trade") or {}).get("traded_timestamp") or ""),
         "entry_slippage_applied": True,
         "status": doc.get("_runtime_status") or ("ACTIVE" if doc.get("status") == 1 else "EXITED"),
+        "entry_error": str(doc.get("_runtime_entry_error") or ""),
         "reentry_max": int(doc.get("_runtime_reentry_max") or 0),
         "reentry_used": int(doc.get("_runtime_reentry_used") or 0),
         "recost_max": int(doc.get("_runtime_recost_max") or 0),
@@ -198,6 +208,17 @@ def _strategy_status_string(strategy: StrategyRuntime) -> str:
     return "StrategyStatus.Live_Running"
 
 
+def _entry_error(strategy: StrategyRuntime, failed_legs: list[LegRuntime]) -> dict[str, Any] | None:
+    """The margin square-off reason, else the first rejected leg's error."""
+    if strategy.entry_error:
+        return strategy.entry_error
+    for leg in failed_legs:
+        if leg.entry_error:
+            label = f"{'Sell' if leg.is_sell else 'Buy'} {leg.token}"
+            return {"leg_id": leg.leg_id, "reason": "ORDER_ERROR", "message": f"{label}: {leg.entry_error}", "at": leg.entry_ts}
+    return None
+
+
 def _strategy_ticker(strategy: StrategyRuntime, legs: list[LegRuntime]) -> str:
     ticker = str(strategy.strategy_cfg.get("Ticker") or "").upper()
     if ticker:
@@ -220,7 +241,11 @@ def strategy_to_doc(strategy: StrategyRuntime, legs: list[LegRuntime], lazy_watc
     `[w for w in router.lazy_watchers.values() if w.strategy_id == strategy.strategy_id]`
     — omitted (not just empty-by-coincidence) callers simply get no
     pending legs in this one doc, same as before this parameter existed."""
-    open_legs = [leg for leg in legs if leg.status not in _TERMINAL_LEG_STATUSES and leg.status != "EXIT_PENDING"]
+    open_legs = [leg for leg in legs if leg.status not in _TERMINAL_LEG_STATUSES and leg.status not in ("EXIT_PENDING", ENTRY_FAILED)]
+    failed_legs = [leg for leg in legs if leg.status == ENTRY_FAILED]
+    present = {leg.leg_id for leg in legs}
+    # Legs already closed before a restart (not in the router) stay listed.
+    record_legs = legs + [leg for lid, leg in strategy.closed_legs.items() if lid not in present]
     underlying = _strategy_ticker(strategy, legs)
     return {
         "_id": strategy.strategy_id,
@@ -230,6 +255,10 @@ def strategy_to_doc(strategy: StrategyRuntime, legs: list[LegRuntime], lazy_watc
         "ticker": underlying,
         "status": _strategy_status_string(strategy),
         "active_on_server": strategy.status != "EXITED",
+        # AlgoTrade2's card: the error banner, and Resume while a rejected
+        # (non-margin) live entry can be placed again.
+        "entry_error": _entry_error(strategy, failed_legs),
+        "resume_available": bool(failed_legs) and strategy.status == "ACTIVE",
         "activation_mode": strategy.activation_mode or "fast-forward",
         "broker": strategy.broker_scope_id,
         "broker_label": strategy.broker_scope_id.split(":", 1)[-1] if strategy.broker_scope_id else "",
@@ -244,7 +273,7 @@ def strategy_to_doc(strategy: StrategyRuntime, legs: list[LegRuntime], lazy_watc
         "user_id": strategy.user_id,
         "open_legs_count": len(open_legs),
         "entry_time": strategy.entry_time,
-        "legs": [_leg_to_wire(leg, underlying) for leg in legs],
+        "legs": [_leg_to_wire(leg, underlying) for leg in record_legs],
         "pending_feature_legs": [_lazy_watcher_to_pending_leg(w) for w in (lazy_watchers or [])],
         "strategy_feature_status_rows": [],
         "portfolio": {
@@ -267,6 +296,7 @@ def strategy_to_doc(strategy: StrategyRuntime, legs: list[LegRuntime], lazy_watc
         "creation_ts": datetime.now(timezone.utc).isoformat(),
         # Recovery-only fields, not read by the frontend.
         "_runtime_status": strategy.status,
+        "_runtime_entry_error": strategy.entry_error,
         "_runtime_group_id": strategy.group_id,
         "_runtime_group_name": strategy.group_name,
         "_runtime_trade_portfolio": strategy.trade_portfolio,
@@ -350,6 +380,7 @@ def doc_to_strategy_kwargs(doc: dict[str, Any]) -> dict[str, Any]:
         "sl_reentry_done": int(doc.get("_runtime_sl_reentry_done") or 0),
         "tgt_reentry_done": int(doc.get("_runtime_tgt_reentry_done") or 0),
         "status": doc.get("_runtime_status") or "ACTIVE",
+        "entry_error": dict(doc.get("_runtime_entry_error") or {}),
         # "" for a checkpoint written before this field existed — treated as
         # "unknown/stale" by _daily_eod_square_off_loop, same as a genuinely
         # old date (never as "today"), so pre-existing leftover positions

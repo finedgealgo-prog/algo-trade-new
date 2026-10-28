@@ -18,6 +18,11 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
+# Status of a live leg whose entry order was rejected (no position on the
+# exchange) and that waits for the user to resume it.
+ENTRY_FAILED = "ENTRY_FAILED"
+
+
 @dataclass
 class LegRuntime:
     leg_id: str
@@ -69,6 +74,10 @@ class LegRuntime:
     # SL/Target/Trail are not evaluated until the real fill price becomes
     # entry_price (orders/live_executor.py clears this on the fill).
     awaiting_live_fill: bool = False
+    # Live entry order rejected for a reason other than margin (status
+    # "ENTRY_FAILED", no position on Delta): the broker's error, shown on
+    # AlgoTrade2 until the user resumes (services/entry_resume.py).
+    entry_error: str = ""
 
     # True UTC "YYYY-MM-DD HH:MM:SS" — when the leg entered / exited. Sent as
     # entry_trade/exit_trade.traded_timestamp (FastForward2's MTM graph

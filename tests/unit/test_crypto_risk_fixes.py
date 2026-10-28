@@ -712,3 +712,42 @@ def test_save_route_refuses_breached_stop_loss_and_keeps_settings(monkeypatch):
             {"user_id": "u1", "broker": "bconf1", "activation_mode": "fast-forward", "StopLoss": 4900}))
     assert exc.value.status_code == 400 and "7,645.60" in exc.value.detail
     assert writes == [] and leg.status == "ACTIVE" and broker.config.stop_loss_enabled is False
+
+
+def test_archived_strategy_no_longer_counts_toward_broker_mtm(monkeypatch):
+    import main
+    from api.routers import ws_live
+    from risk.broker_risk import risk_mtm
+    today = broker_scope._current_trading_days()[-1]
+    router, broker, _leg = _broker_with_closed_loss({}, 0.0)
+    broker.closed_strategies = {"old": (today, -5000.0), "kept": (today, -700.0)}
+    assert risk_mtm(router, "bconf1") == pytest.approx(-5700.0)
+    monkeypatch.setattr(main, "token_router", router)
+
+    docs = {"old": {"_id": "old", "user_id": "u1"}, "kept": {"_id": "kept", "user_id": "u1"}}
+
+    class _Col:
+        def update_many(self, query, update):
+            for i in query["_id"]["$in"]:
+                docs[i].update(update["$set"])
+            return SimpleNamespace(modified_count=len(query["_id"]["$in"]))
+
+        def find(self, query, projection=None):
+            return [d for i, d in docs.items() if i in query["_id"]["$in"] and d.get("archived")]
+
+    monkeypatch.setattr(ws_live, "get_mongo", lambda: SimpleNamespace(raw={"algo_trades": _Col()}))
+    ws_live.archive_strategies(ws_live.ArchiveRequest(strategy_ids=["old"]), {"_id": "u1"})
+    assert "old" not in broker.closed_strategies
+    assert risk_mtm(router, "bconf1") == pytest.approx(-700.0)  # only what the page still shows
+
+
+def test_startup_reload_skips_archived_strategies():
+    seen = {}
+
+    class _Col:
+        def find(self, query, projection=None):
+            seen.update(query)
+            return []
+
+    broker_scope.closed_day_strategies(SimpleNamespace(raw={"algo_trades": _Col()}), "b1")
+    assert seen["archived"] == {"$ne": True}

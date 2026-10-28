@@ -40,7 +40,7 @@ from datetime import datetime, timezone
 from typing import Any, Callable
 
 from risk import mtm_engine, sl_tp_engine
-from runtime.leg_runtime import LegRuntime
+from runtime.leg_runtime import ENTRY_FAILED, LegRuntime
 from shared.brokers.delta import client as delta_client
 from shared.brokers.delta.order_adapter import DeltaOrderAdapter, DeltaOrderError, is_delta_broker_doc
 from shared.config.settings import get_settings
@@ -55,6 +55,14 @@ _STOP_POLL_SECONDS = 3.0
 _STOP_EDIT_MIN_INTERVAL = 1.0
 _POLL_INTERVAL_SECONDS = 0.5
 _EXIT_ATTEMPTS = 3
+# Delta's error code for an order the account can't fund
+# ("insufficient_margin"); matched loosely so a reworded message still counts.
+_MARGIN_ERROR_MARKERS = ("insufficient_margin", "insufficient margin", "margin")
+
+
+def is_margin_error(error: str) -> bool:
+    text = (error or "").lower()
+    return any(marker in text for marker in _MARGIN_ERROR_MARKERS)
 
 
 @dataclass
@@ -97,6 +105,9 @@ class LiveOrderExecutor:
         # while this server was down) -> exit that leg in the engine. The
         # exit then sends no order (see _broker_exited).
         self.on_broker_stop_filled: Callable[[str, float], None] = lambda leg_id, price: None
+        # Set by main.py: an entry was rejected for insufficient margin ->
+        # square off the whole strategy (args: strategy_id, leg_id, error).
+        self.on_margin_rejected: Callable[[str, str, str], None] = lambda strategy_id, leg_id, error: None
 
         # Protective stops: leg_id -> {order_id, product_id, stop_price, size,
         # symbol, side, broker_scope_id, user_id, strategy_id, order_type}.
@@ -510,7 +521,10 @@ class LiveOrderExecutor:
         self._entry_filled[leg.leg_id] = result.filled
         self._audit(leg, "ENTRY", side, result)
         if result.filled <= 0:
-            self._alert(leg, "LIVE_ENTRY_REJECTED", f"Entry NOT placed — {leg.token} {side.upper()} x{size}: leg dropped.\n{result.error}")
+            if is_margin_error(result.error):
+                self._alert(leg, "LIVE_ENTRY_MARGIN", f"Entry NOT placed — {leg.token} {side.upper()} x{size}: insufficient margin. Strategy squared off.\n{result.error}")
+            else:
+                self._alert(leg, "LIVE_ENTRY_REJECTED", f"Entry NOT placed — {leg.token} {side.upper()} x{size}. Strategy waiting: press Resume on Algo Trade 2.0 to place this leg again.\n{result.error}")
         elif result.filled < size:
             self._alert(leg, "LIVE_ENTRY_PARTIAL", f"Entry partly filled — {leg.token} {side.upper()} {result.filled}/{size} @ {result.avg_price:g}; running with {result.filled}.\n{result.error}")
         self._call_on_loop(loop, self._on_entry_done, leg, result)
@@ -709,11 +723,27 @@ class LiveOrderExecutor:
     def _on_entry_done(self, leg: LegRuntime, result: ExecutionResult) -> None:
         leg.awaiting_live_fill = False
         if result.filled <= 0:
-            log.error("[LiveOrder] ENTRY REJECTED leg=%s token=%s — leg aborted (no position): %s", leg.leg_id, leg.token, result.error)
+            # No position exists: the leg carries no P&L.
             if leg.status not in ("EXITED", "SL_HIT", "TP_HIT"):
                 leg.current_price = leg.entry_price
                 self._propagate(leg, mtm_engine.apply_leg_pnl_delta(leg))
-                leg.status = "EXITED"
+            margin = is_margin_error(result.error)
+            strategy = self.router.strategies.get(leg.strategy_id)
+            if margin or leg.status != "ACTIVE" or strategy is None or strategy.status != "ACTIVE":
+                # Insufficient margin, or the leg/strategy is already being
+                # exited: nothing to resume — the leg is simply closed.
+                log.error("[LiveOrder] ENTRY REJECTED leg=%s token=%s margin=%s — leg closed (no position): %s", leg.leg_id, leg.token, margin, result.error)
+                if leg.status not in ("EXITED", "SL_HIT", "TP_HIT"):
+                    leg.status = "EXITED"
+                if margin:
+                    self.on_margin_rejected(leg.strategy_id, leg.leg_id, result.error)
+                    return
+            else:
+                # Any other rejection: the leg waits (no position, no SL/TP)
+                # until the user resumes it (services/entry_resume.py).
+                log.error("[LiveOrder] ENTRY REJECTED leg=%s token=%s — waiting for resume: %s", leg.leg_id, leg.token, result.error)
+                leg.status = ENTRY_FAILED
+                leg.entry_error = result.error or "order rejected"
             self.on_strategy_changed(leg.strategy_id)
             return
         leg.qty = result.filled

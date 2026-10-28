@@ -21,6 +21,7 @@ from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from services import entry_resume
 from services.strategy_activation import ActivationError, activate_strategy
 from shared.auth.dependency import get_current_user
 from shared.db.mongo import get_mongo
@@ -292,3 +293,22 @@ async def activate(strategy_id: str, payload: ActivateRequest, user: dict = Depe
     await broadcast_strategy_snapshots(token_router, [result["strategy_id"]])
 
     return {"success": True, **result}
+
+
+@router.post("/{strategy_id}/resume-entry")
+def resume_entry(strategy_id: str, user: dict = Depends(get_current_user)) -> dict:
+    """AlgoTrade2's Resume: places the entry order again for the legs whose
+    live entry was rejected (non-margin error) — services/entry_resume.py.
+    `strategy_id` is the running strategy's id (algo_trades _id)."""
+    from main import _on_live_order_change, order_engine, token_router
+
+    strategy = token_router.strategies.get(strategy_id)
+    requester = str(user.get("_id") or "")
+    if strategy is not None and requester and strategy.user_id and strategy.user_id != requester:
+        raise HTTPException(status_code=403, detail="Not your strategy")
+    try:
+        leg_ids = entry_resume.resume_failed_entries(token_router, order_engine, strategy_id)
+    except entry_resume.ResumeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    _on_live_order_change(strategy_id)  # checkpoint + push the legs back to ACTIVE
+    return {"success": True, "strategy_id": strategy_id, "resumed_leg_ids": leg_ids}

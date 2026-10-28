@@ -24,6 +24,7 @@ import asyncio
 
 from persistence.checkpoint import get_checkpoint_writer
 from persistence.serializers import pending_work_to_doc, strategy_to_doc
+from runtime.leg_runtime import ENTRY_FAILED
 from shared.logging.logger import get_logger
 
 log = get_logger(__name__)
@@ -76,7 +77,9 @@ def square_off_strategy(router, order_engine, strategy_id: str, reason: str) -> 
     for leg_id in list(strategy.leg_ids):
         leg = router.legs.get(leg_id)
         if leg is not None and leg.status not in _TERMINAL:
-            if leg.status == "ACTIVE":
+            if leg.status == ENTRY_FAILED:
+                leg.status = "EXITED"  # rejected entry, no position to close
+            elif leg.status == "ACTIVE":
                 order_engine.manual_square_off(leg_id, reason=reason)
             else:  # EXIT_PENDING claimed by another scope — finish it
                 order_engine._exit_leg(leg_id, reason)
